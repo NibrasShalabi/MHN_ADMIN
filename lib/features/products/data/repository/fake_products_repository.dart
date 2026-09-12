@@ -3,10 +3,10 @@ import 'products_repository.dart';
 
 class FakeProductsRepository implements ProductsRepository {
   final List<Product> _products = [
-    const Product(id: 'P-1', name: 'سيروم 1', price: 16250, stock: 40, isNew: true),
-    const Product(id: 'P-2', name: 'سيروم 2', price: 17500, stock: 25),
-    const Product(id: 'P-3', name: 'سيروم 3', price: 18750, stock: 0, isOrderable: false),
-    const Product(id: 'P-4', name: 'سيروم 4', price: 20000, stock: 15),
+    const Product(id: 'P-1', name: 'سيروم 1', price: 16250, costPrice: 9000, stock: 40, isNew: true),
+    const Product(id: 'P-2', name: 'سيروم 2', price: 17500, costPrice: 9800, stock: 25),
+    const Product(id: 'P-3', name: 'سيروم 3', price: 18750, costPrice: 10500, stock: 0, isOrderable: false),
+    const Product(id: 'P-4', name: 'سيروم 4', price: 20000, costPrice: 11200, stock: 15),
   ];
 
   @override

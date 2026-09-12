@@ -16,7 +16,8 @@ enum AdminSection {
   fitness,
   loyalty,
   presets,
-  content,
+  homeBanners,
+  suppliers,
   analytics,
 }
 
@@ -31,7 +32,8 @@ extension AdminSectionInfo on AdminSection {
     AdminSection.fitness => AdminStrings.navFitness,
     AdminSection.loyalty => AdminStrings.navLoyalty,
     AdminSection.presets => AdminStrings.navPresets,
-    AdminSection.content => AdminStrings.navContent,
+    AdminSection.homeBanners => AdminStrings.navHomeBanners,
+    AdminSection.suppliers => AdminStrings.navSuppliers,
     AdminSection.analytics => AdminStrings.navAnalytics,
   };
 
@@ -45,7 +47,8 @@ extension AdminSectionInfo on AdminSection {
     AdminSection.fitness => Icons.spa_outlined,
     AdminSection.loyalty => Icons.local_fire_department_outlined,
     AdminSection.presets => Icons.tune_outlined,
-    AdminSection.content => Icons.article_outlined,
+    AdminSection.homeBanners => Icons.view_carousel_outlined,
+    AdminSection.suppliers => Icons.storefront_outlined,
     AdminSection.analytics => Icons.insights_outlined,
   };
 }

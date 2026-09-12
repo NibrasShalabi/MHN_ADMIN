@@ -5,13 +5,14 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_shell.dart';
-import '../../../about/presentation/pages/about_page.dart';
 import '../../../analytics/presentation/pages/analytics_page.dart';
 import '../../../categories/presentation/pages/categories_page.dart';
 import '../../../fitness/presentation/pages/fitness_page.dart';
 import '../../../loyalty/presentation/pages/loyalty_page.dart';
 import '../../../orders/presentation/pages/orders_page.dart';
 import '../../../presets/presentation/pages/presets_page.dart';
+import '../../../home_banners/presentation/pages/promo_banners_page.dart';
+import '../../../suppliers/presentation/pages/suppliers_page.dart';
 import '../../../products/presentation/pages/products_page.dart';
 import '../../../suggestions/presentation/pages/suggestions_page.dart';
 import '../../../support/presentation/pages/support_page.dart';
@@ -71,7 +72,8 @@ class _SectionBody extends StatelessWidget {
         AdminSection.fitness => const FitnessPage(),
         AdminSection.loyalty => const LoyaltyPage(),
         AdminSection.presets => const PresetsPage(),
-        AdminSection.content => const AboutPage(),
+        AdminSection.homeBanners => const PromoBannersPage(),
+        AdminSection.suppliers => const SuppliersPage(),
         AdminSection.analytics => const AnalyticsPage(),
       },
     );

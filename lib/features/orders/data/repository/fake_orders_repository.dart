@@ -1,4 +1,5 @@
 import '../../domain/entities/order.dart';
+import '../../domain/entities/order_batch.dart';
 import '../../presentation/widgets/order_message.dart';
 import 'orders_repository.dart';
 
@@ -28,6 +29,8 @@ class FakeOrdersRepository implements OrdersRepository {
     ),
   ];
   final List<OrderMessage> _messages = [];
+  final List<OrderBatch> _batches = [];
+
   @override
   Future<List<Order>> getOrders() async {
     await Future.delayed(const Duration(milliseconds: 400));
@@ -58,5 +61,30 @@ class FakeOrdersRepository implements OrdersRepository {
         sentAt: DateTime.now(),
       ));
     }
+  }
+
+  @override
+  Future<List<OrderBatch>> getBatches() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return List.unmodifiable(_batches);
+  }
+
+  @override
+  Future<void> createBatch(String name, List<String> orderIds) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    _batches.add(OrderBatch(
+      id: 'BATCH-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      orderIds: orderIds,
+      createdAt: DateTime.now(),
+    ));
+  }
+
+  @override
+  Future<void> deleteBatch(String id) async {
+    // Ungroups only — the orders themselves are untouched, same as
+    // removing a label rather than deleting what it was on.
+    await Future.delayed(const Duration(milliseconds: 200));
+    _batches.removeWhere((b) => b.id == id);
   }
 }

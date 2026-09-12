@@ -5,7 +5,7 @@ import 'core/constants/admin_strings.dart';
 import 'core/injector/injector.dart';
 import 'core/theme/admin_colors.dart';
 import 'core/theme/admin_text_styles.dart';
-import 'features/dashboard/presentation/pages/admin_home_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +46,7 @@ class AdminApp extends StatelessWidget {
       // TODO(routing): move to go_router once there are deep links worth
       // addressing. Until then the shell owns section switching, and a
       // router would add indirection without buying anything.
-      home: const AdminHomePage(),
+      home: const LoginPage(),
     );
   }
 }

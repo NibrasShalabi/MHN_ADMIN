@@ -9,6 +9,21 @@ class Product extends Equatable {
   final String name;
   final String? category;
   final double price;
+
+  /// What the item costs the business, per 8.2 — admin-only. Never sent
+  /// in anything the client app reads; only used here to compute margin
+  /// and net profit in Analytics.
+  final double? costPrice;
+
+  /// Per-product shipping cost, separate from [price] — optional, most
+  /// products won't set it (flat/negotiated delivery fee applies instead).
+  final double? shippingPrice;
+
+  /// Set directly on the product (per 8.2), independent of whether its
+  /// category is supplier-scoped — the more precise, always-available
+  /// signal Analytics uses to attribute sales to a supplier.
+  final String? supplierId;
+
   final int stock;
   final String description;
   final String? ingredients;
@@ -27,6 +42,9 @@ class Product extends Equatable {
     required this.name,
     this.category,
     required this.price,
+    this.costPrice,
+    this.shippingPrice,
+    this.supplierId,
     required this.stock,
     this.description = '',
     this.ingredients,
@@ -45,6 +63,9 @@ class Product extends Equatable {
     String? name,
     String? category,
     double? price,
+    double? costPrice,
+    double? shippingPrice,
+    String? supplierId,
     int? stock,
     String? description,
     String? ingredients,
@@ -63,6 +84,9 @@ class Product extends Equatable {
       name: name ?? this.name,
       category: category ?? this.category,
       price: price ?? this.price,
+      costPrice: costPrice ?? this.costPrice,
+      shippingPrice: shippingPrice ?? this.shippingPrice,
+      supplierId: supplierId ?? this.supplierId,
       stock: stock ?? this.stock,
       description: description ?? this.description,
       ingredients: ingredients ?? this.ingredients,
@@ -84,6 +108,9 @@ class Product extends Equatable {
     name,
     category,
     price,
+    costPrice,
+    shippingPrice,
+    supplierId,
     stock,
     description,
     ingredients,

@@ -35,7 +35,8 @@ class AdminStrings {
   static const String navFitness = 'قسم الرياضة';
   static const String navLoyalty = 'متجر الولاء';
   static const String navPresets = 'القوالب';
-  static const String navContent = 'محتوى من نحن';
+  static const String navHomeBanners = 'بانرات الرئيسية';
+  static const String navSuppliers = 'الموردون';
   static const String navAnalytics = 'الإحصائيات';
 
   // ==================== المنتجات ====================
@@ -46,6 +47,8 @@ class AdminStrings {
   static const String productCategory = 'القسم';
   static const String productFilter = 'الفلتر';
   static const String productPrice = 'السعر';
+  static const String productCostPrice = 'سعر التكلفة (لا يظهر للعميل)';
+  static const String productShippingPrice = 'سعر الشحن (اختياري)';
   static const String productStock = 'المخزون';
   static const String productDescription = 'الوصف';
   static const String productIngredients = 'المكوّنات';
@@ -80,11 +83,24 @@ class AdminStrings {
   static const String categories = 'الأقسام';
   static const String addCategory = 'إضافة قسم';
   static const String editCategory = 'تعديل قسم';
+  static const String addBanner = 'إضافة بانر';
+  static const String editBanner = 'تعديل بانر';
+  static const String bannerImage = 'صورة البانر';
+  static const String bannerTitle = 'عنوان البانر (اختياري)';
+  static const String bannerOrder = 'الترتيب';
+  static const String addSupplier = 'إضافة مورد';
+  static const String editSupplier = 'تعديل مورد';
+  static const String supplierName = 'اسم المورد';
+  static const String supplierDescription = 'الوصف';
+  static const String supplierLogo = 'شعار المورد';
+  static const String productSupplier = 'المورد (اختياري)';
+  static const String noSupplier = 'بدون مورد';
   static const String categoryName = 'اسم القسم';
   static const String categoryScope = 'مكان الظهور';
   static const String scopeStore = 'المتجر';
   static const String scopeFitness = 'قسم الرياضة';
   static const String scopeLoyalty = 'متجر الولاء';
+  static const String scopeSupplier = 'مورد';
   static const String filters = 'الفلاتر';
   static const String addFilter = 'إضافة فلتر';
   static const String filterName = 'اسم الفلتر';
@@ -102,6 +118,22 @@ class AdminStrings {
   static const String expectedDelivery = 'وقت التسليم المتوقع';
   static const String statusNote = 'سبب التأخير / الإلغاء';
   static const String messageCustomer = 'إرسال رسالة للعميل';
+
+  // ==================== دفعات الطلبات (8.1) ====================
+  static const String ordersTab = 'الطلبات';
+  static const String batchesTab = 'الدفعات';
+  static const String createBatch = 'إنشاء دفعة';
+  static const String batchName = 'اسم الدفعة';
+  static const String batchNameHint = 'مثال: شحنة 15 آذار';
+  static const String selectedOrdersCount = 'طلب محدّد';
+  static const String batchOrdersCount = 'عدد الطلبات';
+  static const String batchCustomersCount = 'عدد العملاء';
+  static const String batchTotal = 'الإجمالي';
+  static const String ungroupBatch = 'فك تجميع الدفعة';
+  static const String ungroupBatchConfirm =
+      'رح تنحذف الدفعة، وبتضل الطلبات نفسها متل ما هي بدون تغيير.';
+  static const String selectOrdersForBatch = 'اختر طلبات من قائمة الطلبات أول لإنشاء دفعة منها.';
+  static const String applyToAll = 'تطبيق على كل الدفعة';
   static const String statusPending = 'قيد الانتظار';
   static const String statusConfirmed = 'تم التأكيد';
   static const String statusPreparing = 'قيد التحضير';
@@ -185,6 +217,26 @@ class AdminStrings {
   static const String topCategories = 'الأقسام الأكثر زيارة';
   static const String topProducts = 'المنتجات الأكثر طلباً';
 
+  static const String financialStats = 'مالية';
+  static const String catalogStats = 'الكتالوج';
+  static const String customerStats = 'العملاء';
+  static const String supplierStats = 'الموردين';
+  static const String fitnessStats = 'الرياضة';
+
+  static const String netProfit = 'صافي الربح (تقديري)';
+  static const String averageOrderValue = 'متوسط قيمة الطلب';
+
+  static const String topOrderingCustomers = 'الأكثر طلباً';
+  static const String topSpendingCustomers = 'الأكثر إنفاقاً';
+  static const String topComplainingCustomers = 'الأكثر شكوى';
+  static const String mostActiveCustomers = 'الأكثر نشاطاً';
+  static const String complaints = 'شكاوى';
+  static const String activityScore = 'نقاط النشاط';
+
+  static const String topSellingSuppliers = 'الأكثر مبيعاً';
+
+  static const String topPrograms = 'البرامج الأكثر تقديماً';
+
 
 // ===========================
   static const String ordersPendingTab = 'قيد الانتظار';
@@ -262,6 +314,7 @@ class AdminStrings {
   static const String loyaltyGifts = 'هدايا الولاء';
   static const String loyaltyRules = 'قواعد الاحتساب';
   static const String pointsLedger = 'سجل النقاط';
+  static const String loyaltyLeaderboard = 'الأكثر نشاطاً';
   static const String pointsPerPurchase = 'نقاط لكل عملية شراء';
   static const String purchasePointsType = 'طريقة الاحتساب';
   static const String pointsFixed = 'رقم ثابت';
@@ -333,5 +386,3 @@ class AdminStrings {
 
 
 }
-
-

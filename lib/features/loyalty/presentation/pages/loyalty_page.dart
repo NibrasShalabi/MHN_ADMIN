@@ -5,15 +5,17 @@ import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/widgets/admin_chips.dart';
 import '../../../products/presentation/pages/products_page.dart';
 import 'loyalty_ledger_page.dart';
+import 'loyalty_leaderboard_page.dart';
 import 'loyalty_rules_page.dart';
 
-enum LoyaltyTab { gifts, rules, ledger }
+enum LoyaltyTab { gifts, rules, ledger, leaderboard }
 
 extension LoyaltyTabX on LoyaltyTab {
   String get label => switch (this) {
     LoyaltyTab.gifts => AdminStrings.loyaltyGifts,
     LoyaltyTab.rules => AdminStrings.loyaltyRules,
     LoyaltyTab.ledger => AdminStrings.pointsLedger,
+    LoyaltyTab.leaderboard => AdminStrings.loyaltyLeaderboard,
   };
 }
 
@@ -44,6 +46,7 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
           LoyaltyTab.gifts => const ProductsPage(pricingMode: ProductsPricingMode.points),
           LoyaltyTab.rules => const LoyaltyRulesPage(),
           LoyaltyTab.ledger => const LoyaltyLedgerPage(),
+          LoyaltyTab.leaderboard => const LoyaltyLeaderboardPage(),
         },
       ],
     );

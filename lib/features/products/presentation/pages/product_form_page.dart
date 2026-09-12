@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:mhn_admin/features/products/presentation/pages/products_page.dart';
 
 import '../../../../core/constants/admin_constants.dart';
@@ -10,11 +11,14 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
+import '../../../../core/widgets/admin_chips.dart';
 import '../../../../core/widgets/admin_field.dart';
 import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../../presets/domain/entities/presets.dart';
 import '../../../presets/presentation/widgets/product_variants_section.dart';
+import '../../../suppliers/data/repository/suppliers_repository.dart';
+import '../../../suppliers/domain/entities/supplier.dart';
 import '../../domain/entities/product.dart';
 import '../cubits/products_cubit.dart';
 
@@ -38,6 +42,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
   late final TextEditingController _priceController;
+  late final TextEditingController _costPriceController;
+  late final TextEditingController _shippingPriceController;
   late final TextEditingController _stockController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _ingredientsController;
@@ -51,6 +57,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late Set<String> _sizes;
   late Set<String> _colorIds;
   SizeGuideTemplate? _sizeGuide;
+  String? _supplierId;
+  late Future<List<Supplier>> _suppliersFuture;
 
   bool get _isEditing => widget.product != null;
 
@@ -62,6 +70,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _categoryController = TextEditingController(text: p?.category ?? '');
     _priceController = TextEditingController(
       text: p == null ? '' : p.price.toStringAsFixed(0),
+    );
+    _costPriceController = TextEditingController(
+      text: p?.costPrice == null ? '' : p!.costPrice!.toStringAsFixed(0),
+    );
+    _shippingPriceController = TextEditingController(
+      text: p?.shippingPrice == null ? '' : p!.shippingPrice!.toStringAsFixed(0),
     );
     _stockController = TextEditingController(
       text: p == null ? '' : p.stock.toString(),
@@ -77,6 +91,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _sizes = {...?p?.sizes};
     _colorIds = {...?p?.colorIds};
     _sizeGuide = p?.sizeGuide;
+    _supplierId = p?.supplierId;
+    _suppliersFuture = GetIt.instance<SuppliersRepository>().getSuppliers();
   }
 
   @override
@@ -84,6 +100,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _nameController.dispose();
     _categoryController.dispose();
     _priceController.dispose();
+    _costPriceController.dispose();
+    _shippingPriceController.dispose();
     _stockController.dispose();
     _descriptionController.dispose();
     _ingredientsController.dispose();
@@ -94,6 +112,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   void _save() {
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
+    final costPrice = double.tryParse(_costPriceController.text.trim());
+    final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
 
     final product = Product(
@@ -103,6 +123,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
           ? null
           : _categoryController.text.trim(),
       price: price,
+      costPrice: costPrice,
+      shippingPrice: shippingPrice,
       stock: stock,
       description: _descriptionController.text.trim(),
       ingredients: _ingredientsController.text.trim().isEmpty
@@ -121,6 +143,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       sizes: _sizes,
       colorIds: _colorIds,
       sizeGuide: _sizeGuide,
+      supplierId: _supplierId,
     );
 
     final cubit = context.read<ProductsCubit>();
@@ -261,30 +284,86 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 const SizedBox(height: AdminConstants.spacingLg),
                 AdminCard(
                   title: AdminStrings.pricingAndStock,
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: AdminField(
-                          label: AdminStrings.productPrice,
-                          isRequired: true,
-                          child: AdminTextInput(
-                            controller: _priceController,
-                            keyboardType: TextInputType.number,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AdminField(
+                              label: AdminStrings.productPrice,
+                              isRequired: true,
+                              child: AdminTextInput(
+                                controller: _priceController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: AdminConstants.spacingMd),
+                          Expanded(
+                            child: AdminField(
+                              // Admin-only per 8.2 — never sent to the client
+                              // app. Feeds the net-profit number in Analytics.
+                              label: AdminStrings.productCostPrice,
+                              child: AdminTextInput(
+                                controller: _costPriceController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AdminConstants.spacingMd),
-                      Expanded(
-                        child: AdminField(
-                          label: AdminStrings.productStock,
-                          isRequired: true,
-                          child: AdminTextInput(
-                            controller: _stockController,
-                            keyboardType: TextInputType.number,
+                      const SizedBox(height: AdminConstants.spacingMd),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AdminField(
+                              // Optional — separate from the product's own
+                              // price. Most products won't set this; a flat
+                              // delivery fee applies to them instead.
+                              label: AdminStrings.productShippingPrice,
+                              child: AdminTextInput(
+                                controller: _shippingPriceController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: AdminConstants.spacingMd),
+                          Expanded(
+                            child: AdminField(
+                              label: AdminStrings.productStock,
+                              isRequired: true,
+                              child: AdminTextInput(
+                                controller: _stockController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: AdminConstants.spacingLg),
+                AdminCard(
+                  title: AdminStrings.productSupplier,
+                  child: FutureBuilder<List<Supplier>>(
+                    future: _suppliersFuture,
+                    builder: (context, snapshot) {
+                      final suppliers = snapshot.data ?? const [];
+                      if (suppliers.isEmpty) {
+                        return Text(
+                          AdminStrings.noData,
+                          style: AdminTextStyles.caption.copyWith(color: AdminColors.textDisabled),
+                        );
+                      }
+                      return AdminOptionChips<String>(
+                        options: suppliers.map((s) => s.id).toList(),
+                        selected: _supplierId,
+                        labelOf: (id) => suppliers.firstWhere((s) => s.id == id).name,
+                        onChanged: (id) => setState(() => _supplierId = id),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),

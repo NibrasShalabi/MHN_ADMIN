@@ -1,13 +1,15 @@
 import 'package:get_it/get_it.dart';
 
-import '../../features/about/data/repository/about_repository.dart';
-import '../../features/about/data/repository/fake_about_repository.dart';
 import '../../features/analytics/data/repository/analytics_repository.dart';
 import '../../features/analytics/data/repository/fake_analytics_repository.dart';
+import '../../features/auth/data/repository/auth_repository.dart';
+import '../../features/auth/data/repository/fake_auth_repository.dart';
 import '../../features/categories/data/repository/categories_repository.dart';
 import '../../features/categories/data/repository/fake_categories_repository.dart';
 import '../../features/fitness/data/repository/fake_fitness_repository.dart';
 import '../../features/fitness/data/repository/fitness_repository.dart';
+import '../../features/home_banners/data/repository/fake_promo_banners_repository.dart';
+import '../../features/home_banners/data/repository/promo_banners_repository.dart';
 import '../../features/loyalty/data/repository/fake_loyalty_repository.dart';
 import '../../features/loyalty/data/repository/loyalty_repository.dart';
 import '../../features/orders/data/repository/fake_orders_repository.dart';
@@ -18,6 +20,8 @@ import '../../features/products/data/repository/fake_products_repository.dart';
 import '../../features/products/data/repository/products_repository.dart';
 import '../../features/suggestions/data/repository/fake_suggestions_repository.dart';
 import '../../features/suggestions/data/repository/suggestions_repository.dart';
+import '../../features/suppliers/data/repository/fake_suppliers_repository.dart';
+import '../../features/suppliers/data/repository/suppliers_repository.dart';
 import '../../features/support/data/repository/fake_support_repository.dart';
 import '../../features/support/data/repository/support_repository.dart';
 
@@ -33,8 +37,21 @@ void setupInjector() {
   getIt.registerLazySingleton<FitnessRepository>(() => FakeFitnessRepository());
   getIt.registerLazySingleton<PresetsRepository>(() => FakePresetsRepository());
   getIt.registerLazySingleton<LoyaltyRepository>(() => FakeLoyaltyRepository());
-  getIt.registerLazySingleton<AboutRepository>(() => FakeAboutRepository());
-  getIt.registerLazySingleton<AnalyticsRepository>(() => FakeAnalyticsRepository());
+  getIt.registerLazySingleton<PromoBannersRepository>(() => FakePromoBannersRepository());
+  getIt.registerLazySingleton<SuppliersRepository>(() => FakeSuppliersRepository());
+  getIt.registerLazySingleton<AuthRepository>(() => FakeAuthRepository());
+  // (about repository removed with the About section)
+  getIt.registerLazySingleton<AnalyticsRepository>(
+        () => FakeAnalyticsRepository(
+      getIt<LoyaltyRepository>(),
+      getIt<OrdersRepository>(),
+      getIt<SupportRepository>(),
+      getIt<SuggestionsRepository>(),
+      getIt<ProductsRepository>(),
+      getIt<FitnessRepository>(),
+      getIt<SuppliersRepository>(),
+    ),
+  );
 
 
 }

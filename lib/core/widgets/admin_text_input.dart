@@ -11,7 +11,9 @@ class AdminTextInput extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? errorText;
   final bool enabled;
+  final bool obscureText;
   final ValueChanged<String>? onChanged;
+  final Widget? suffixIcon;
 
   const AdminTextInput({
     super.key,
@@ -21,16 +23,19 @@ class AdminTextInput extends StatelessWidget {
     this.keyboardType,
     this.errorText,
     this.enabled = true,
+    this.obscureText = false,
     this.onChanged,
+    this.suffixIcon,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      maxLines: maxLines,
+      maxLines: obscureText ? 1 : maxLines,
       keyboardType: keyboardType,
       enabled: enabled,
+      obscureText: obscureText,
       onChanged: onChanged,
       style: AdminTextStyles.body,
       decoration: InputDecoration(
@@ -38,6 +43,7 @@ class AdminTextInput extends StatelessWidget {
         hintStyle: AdminTextStyles.caption,
         errorText: errorText,
         isDense: true,
+        suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AdminConstants.spacingMd,
           vertical: AdminConstants.spacingSm + 2,
