@@ -192,26 +192,48 @@ class _AnalyticsView extends StatelessWidget {
   }
 
   Widget _buildCatalogSection(AnalyticsState state) {
-    return AdminResponsiveRow(
+    return Column(
       children: [
-        _RankedTable(
-          title: AdminStrings.topCategories,
-          entries: state.data.topCategories,
-          unit: AdminStrings.viewsWord,
-          icon: Icons.category_outlined,
+        AdminResponsiveRow(
+          children: [
+            StatCard(
+              label: AdminStrings.totalProductImages,
+              value: '${state.data.totalProductImages}',
+              icon: Icons.photo_library_outlined,
+            ),
+            StatCard(
+              label: AdminStrings.mostOrderedProduct,
+              value: state.data.mostOrderedProduct == null
+                  ? AdminStrings.noData
+                  : '${state.data.mostOrderedProduct!.name} (${state.data.mostOrderedProduct!.value} ${AdminStrings.orders})',
+              icon: Icons.star_outline,
+              valueColor: AdminColors.gold,
+            ),
+          ],
         ),
-        _RankedTable(
-          title: AdminStrings.topProducts,
-          entries: state.data.topProducts,
-          unit: AdminStrings.orders,
-          icon: Icons.inventory_2_outlined,
-        ),
-        _RankedTable(
-          title: AdminStrings.loyaltyLeaderboard,
-          entries: state.data.topLoyaltyEarners,
-          unit: AdminStrings.pointsBalance,
-          icon: Icons.local_fire_department_outlined,
-          accentColor: AdminColors.gold,
+        const SizedBox(height: AdminConstants.spacingLg),
+        AdminResponsiveRow(
+          children: [
+            _RankedTable(
+              title: AdminStrings.topCategories,
+              entries: state.data.topCategories,
+              unit: AdminStrings.viewsWord,
+              icon: Icons.category_outlined,
+            ),
+            _RankedTable(
+              title: AdminStrings.topProducts,
+              entries: state.data.topProducts,
+              unit: AdminStrings.orders,
+              icon: Icons.inventory_2_outlined,
+            ),
+            _RankedTable(
+              title: AdminStrings.loyaltyLeaderboard,
+              entries: state.data.topLoyaltyEarners,
+              unit: AdminStrings.pointsBalance,
+              icon: Icons.local_fire_department_outlined,
+              accentColor: AdminColors.gold,
+            ),
+          ],
         ),
       ],
     );

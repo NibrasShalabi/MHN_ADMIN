@@ -150,6 +150,31 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
       }
     }
 
+    // --- صور المنتجات
+    final totalProductImages = products.fold<int>(0, (s, p) => s + p.images.length);
+
+    // --- المنتج الأكثر طلباً
+    final productOrderCounts = <String, num>{};
+    for (final o in orders) {
+      for (final item in o.items) {
+        productOrderCounts.update(
+          item.productName,
+              (v) => v + item.quantity,
+          ifAbsent: () => item.quantity,
+        );
+      }
+    }
+    final mostOrderedProduct = productOrderCounts.isEmpty
+        ? null
+        : RankedEntry(
+      name: productOrderCounts.entries
+          .reduce((a, b) => a.value > b.value ? a : b)
+          .key,
+      value: productOrderCounts.entries
+          .reduce((a, b) => a.value > b.value ? a : b)
+          .value,
+    );
+
     return AnalyticsData(
       daily: daily,
       topCategories: const [
@@ -176,6 +201,8 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
       // supplier-tagged product has sold yet.
       topSellingSuppliers: _rank(supplierUnitsSold),
       topPrograms: _rank(programCounts),
+      totalProductImages: totalProductImages,
+      mostOrderedProduct: mostOrderedProduct,
     );
   }
 }

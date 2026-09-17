@@ -62,6 +62,8 @@ class AnalyticsData extends Equatable {
   // this app currently records — showing a number for those would be
   // decoration, not a stat.
   final List<RankedEntry> topPrograms;
+  final int totalProductImages;
+  final RankedEntry? mostOrderedProduct;
 
   const AnalyticsData({
     this.daily = const [],
@@ -77,6 +79,8 @@ class AnalyticsData extends Equatable {
     this.mostActiveCustomers = const [],
     this.topSellingSuppliers = const [],
     this.topPrograms = const [],
+    this.totalProductImages = 0,
+    this.mostOrderedProduct,
   });
 
   @override
@@ -94,5 +98,7 @@ class AnalyticsData extends Equatable {
     mostActiveCustomers,
     topSellingSuppliers,
     topPrograms,
+    totalProductImages,
+    mostOrderedProduct,
   ];
 }

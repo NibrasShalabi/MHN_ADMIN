@@ -358,6 +358,29 @@ class AdminStrings {
   static const String viewsWord = 'مشاهدة';
 
 
+
+  // ==================== شرار ونار ====================
+  static const String navDeals = 'شرار ونار';
+  static const String addDeal = 'إضافة عرض';
+  static const String activeDeals = 'العروض النشطة';
+  static const String expiredDeals = 'العروض المنتهية';
+  static const String noActiveDeals = 'لا توجد عروض نشطة';
+  static const String dealOriginalPrice = 'السعر الأصلي (USD)';
+  static const String dealDiscount = 'نسبة الخصم';
+  static const String dealDiscountHint = '0 - 100';
+  static const String dealDuration = 'المدة (ساعات)';
+  static const String dealDurationHint = 'مثال: 24';
+  static const String dealPreview = 'السعر بعد الخصم';
+  static const String dealTimeLeft = 'المتبقي';
+  static const String dealExpired = 'منتهي';
+  static const String productId = 'معرّف المنتج';
+  static const String selectProduct = 'اختر منتجاً';
+  static const String dealDuplicateError = 'هذا المنتج عنده عرض نشط بالفعل';
+  static const String productDiscount = 'خصم على المنتج';
+  static const String productDiscountHint = 'اترك فارغاً إذا لا يوجد خصم';
+  static const String totalProductImages = 'إجمالي صور المنتجات';
+  static const String mostOrderedProduct = 'المنتج الأكثر طلباً';
+
   static const String needsAttention = 'يحتاج انتباهك';
   static const String pendingOrdersCard = 'طلبات قيد الانتظار';
   static const String unreviewedSuggestions = 'اقتراحات غير مراجَعة';

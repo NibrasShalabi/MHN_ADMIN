@@ -49,6 +49,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _ingredientsController;
   late final TextEditingController _benefitsController;
   late final TextEditingController _usageController;
+  late final TextEditingController _discountController;
 
   late List<Uint8List> _images;
   late bool _isNew;
@@ -84,6 +85,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _ingredientsController = TextEditingController(text: p?.ingredients ?? '');
     _benefitsController = TextEditingController(text: p?.benefits ?? '');
     _usageController = TextEditingController(text: p?.usage ?? '');
+    _discountController = TextEditingController(
+      text: p?.discountPercentage == null ? '' : p!.discountPercentage!.toStringAsFixed(0),
+    );
     _images = [...?p?.images];
     _isNew = p?.isNew ?? false;
     _isOrderable = p?.isOrderable ?? true;
@@ -107,6 +111,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _ingredientsController.dispose();
     _benefitsController.dispose();
     _usageController.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -115,6 +120,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     final costPrice = double.tryParse(_costPriceController.text.trim());
     final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
+
+    final discountPercentage = double.tryParse(_discountController.text.trim());
 
     final product = Product(
       id: widget.product?.id ?? 'P-${DateTime.now().millisecondsSinceEpoch}',
@@ -144,6 +151,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       colorIds: _colorIds,
       sizeGuide: _sizeGuide,
       supplierId: _supplierId,
+      discountPercentage: discountPercentage,
     );
 
     final cubit = context.read<ProductsCubit>();
@@ -420,6 +428,33 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           maxLines: 2,
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AdminConstants.spacingLg),
+                AdminCard(
+                  title: AdminStrings.productDiscount,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AdminField(
+                        label: AdminStrings.dealDiscount,
+                        hint: AdminStrings.productDiscountHint,
+                        child: AdminTextInput(
+                          controller: _discountController,
+                          keyboardType: TextInputType.number,
+                          hint: '0 - 100',
+                        ),
+                      ),
+                      if (double.tryParse(_discountController.text) != null &&
+                          double.tryParse(_priceController.text) != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AdminConstants.spacingSm),
+                          child: Text(
+                            '${AdminStrings.dealPreview}: \$${(double.parse(_priceController.text) * (1 - double.parse(_discountController.text) / 100)).toStringAsFixed(2)}',
+                            style: AdminTextStyles.caption.copyWith(color: AdminColors.gold),
+                          ),
+                        ),
                     ],
                   ),
                 ),

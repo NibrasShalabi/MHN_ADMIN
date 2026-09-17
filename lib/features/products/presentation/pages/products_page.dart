@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
@@ -64,8 +63,6 @@ class _ProductsViewState extends State<_ProductsView> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat('#,###', 'ar');
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -132,11 +129,30 @@ class _ProductsViewState extends State<_ProductsView> {
                         width: 32, height: 32, fit: BoxFit.cover),
                   ),
                   Text(product.name, style: AdminTextStyles.caption),
-                  Text(
-                    widget.pricingMode == ProductsPricingMode.points
-                        ? '${product.price.toStringAsFixed(0)} ${AdminStrings.pointsWord}'
-                        : '${currency.format(product.price)} ل.س',
-                    style: AdminTextStyles.caption,
+                  widget.pricingMode == ProductsPricingMode.points
+                      ? Text('${product.price.toStringAsFixed(0)} ${AdminStrings.pointsWord}', style: AdminTextStyles.caption)
+                      : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('\$${product.price.toStringAsFixed(2)}', style: AdminTextStyles.caption),
+                      if (product.discountPercentage != null) ...[
+                        const SizedBox(width: AdminConstants.spacingXs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AdminColors.danger,
+                            borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
+                          ),
+                          child: Text(
+                            '${product.discountPercentage!.toStringAsFixed(0)}%',
+                            style: AdminTextStyles.caption.copyWith(
+                              color: AdminColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),                  Text('${product.stock}', style: AdminTextStyles.caption),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -152,7 +168,7 @@ class _ProductsViewState extends State<_ProductsView> {
                     ],
                   ),
                 ];
-                },
+              },
               onRowTap: (index) => _openForm(context, cubit, product: products[index]),
 
             );

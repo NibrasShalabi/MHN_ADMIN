@@ -19,6 +19,7 @@ enum AdminSection {
   homeBanners,
   suppliers,
   analytics,
+  deals,
 }
 
 extension AdminSectionInfo on AdminSection {
@@ -35,6 +36,7 @@ extension AdminSectionInfo on AdminSection {
     AdminSection.homeBanners => AdminStrings.navHomeBanners,
     AdminSection.suppliers => AdminStrings.navSuppliers,
     AdminSection.analytics => AdminStrings.navAnalytics,
+    AdminSection.deals => AdminStrings.navDeals,
   };
 
   IconData get icon => switch (this) {
@@ -50,5 +52,6 @@ extension AdminSectionInfo on AdminSection {
     AdminSection.homeBanners => Icons.view_carousel_outlined,
     AdminSection.suppliers => Icons.storefront_outlined,
     AdminSection.analytics => Icons.insights_outlined,
+    AdminSection.deals => Icons.local_fire_department_outlined,
   };
 }

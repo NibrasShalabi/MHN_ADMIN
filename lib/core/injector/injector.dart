@@ -24,6 +24,7 @@ import '../../features/suppliers/data/repository/fake_suppliers_repository.dart'
 import '../../features/suppliers/data/repository/suppliers_repository.dart';
 import '../../features/support/data/repository/fake_support_repository.dart';
 import '../../features/support/data/repository/support_repository.dart';
+import '../../features/deals/data/repositories/deals_admin_repository.dart';
 
 final getIt = GetIt.instance;
 
@@ -41,6 +42,7 @@ void setupInjector() {
   getIt.registerLazySingleton<SuppliersRepository>(() => FakeSuppliersRepository());
   getIt.registerLazySingleton<AuthRepository>(() => FakeAuthRepository());
   // (about repository removed with the About section)
+  getIt.registerLazySingleton<DealsAdminRepository>(() => FakeDealsAdminRepository());
   getIt.registerLazySingleton<AnalyticsRepository>(
         () => FakeAnalyticsRepository(
       getIt<LoyaltyRepository>(),

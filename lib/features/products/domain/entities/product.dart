@@ -36,6 +36,7 @@ class Product extends Equatable {
   final Set<String> sizes;
   final Set<String> colorIds;
   final SizeGuideTemplate? sizeGuide;
+  final double? discountPercentage;
 
   const Product({
     required this.id,
@@ -57,6 +58,7 @@ class Product extends Equatable {
     this.sizes = const {},
     this.colorIds = const {},
     this.sizeGuide,
+    this.discountPercentage,
   });
 
   Product copyWith({
@@ -78,6 +80,7 @@ class Product extends Equatable {
     Set<String>? sizes,
     Set<String>? colorIds,
     SizeGuideTemplate? sizeGuide,
+    double? discountPercentage,
   }) {
     return Product(
       id: id,
@@ -99,6 +102,7 @@ class Product extends Equatable {
       sizes: sizes ?? this.sizes,
       colorIds: colorIds ?? this.colorIds,
       sizeGuide: sizeGuide ?? this.sizeGuide,
+      discountPercentage: discountPercentage ?? this.discountPercentage,
     );
   }
 
@@ -123,5 +127,6 @@ class Product extends Equatable {
     sizes,
     colorIds,
     sizeGuide,
+    discountPercentage,
   ];
 }

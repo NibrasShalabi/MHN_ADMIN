@@ -6,6 +6,7 @@ import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_shell.dart';
 import '../../../analytics/presentation/pages/analytics_page.dart';
+import '../../../deals/presentation/pages/deals_admin_page.dart';
 import '../../../categories/presentation/pages/categories_page.dart';
 import '../../../fitness/presentation/pages/fitness_page.dart';
 import '../../../loyalty/presentation/pages/loyalty_page.dart';
@@ -75,6 +76,7 @@ class _SectionBody extends StatelessWidget {
         AdminSection.homeBanners => const PromoBannersPage(),
         AdminSection.suppliers => const SuppliersPage(),
         AdminSection.analytics => const AnalyticsPage(),
+        AdminSection.deals => const DealsAdminPage(),
       },
     );
   }
