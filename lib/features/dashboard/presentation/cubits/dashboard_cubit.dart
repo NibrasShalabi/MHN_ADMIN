@@ -36,6 +36,7 @@ class DashboardCubit extends Cubit<DashboardState> {
         super(const DashboardState());
 
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: DashboardStatus.loading));
     try {
       final orders = await _ordersRepository.getOrders();
@@ -46,10 +47,12 @@ class DashboardCubit extends Cubit<DashboardState> {
       final analytics = await _analyticsRepository.getAnalytics();
 
       final now = DateTime.now();
-      bool isToday(DateTime d) => d.year == now.year && d.month == now.month && d.day == now.day;
+      bool isToday(DateTime d) =>
+          d.year == now.year && d.month == now.month && d.day == now.day;
 
       final todayOrders = orders.where((o) => isToday(o.orderDate)).toList();
-      final sortedOrders = [...orders]..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+      final sortedOrders = [...orders]
+        ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
 
       final summary = DashboardSummary(
         pendingOrders: orders.where((o) => o.status == OrderStatus.pending).length,
@@ -64,9 +67,9 @@ class DashboardCubit extends Cubit<DashboardState> {
         recentOrders: sortedOrders.take(5).toList(),
       );
 
-      emit(state.copyWith(status: DashboardStatus.loaded, summary: summary));
+      if (!isClosed) emit(state.copyWith(status: DashboardStatus.loaded, summary: summary));
     } catch (e) {
-      emit(state.copyWith(status: DashboardStatus.error, errorMessage: e.toString()));
+      if (!isClosed) emit(state.copyWith(status: DashboardStatus.error, errorMessage: e.toString()));
     }
   }
 }

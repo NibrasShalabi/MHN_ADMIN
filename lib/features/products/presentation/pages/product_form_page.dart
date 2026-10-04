@@ -11,14 +11,13 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
-import '../../../../core/widgets/admin_chips.dart';
 import '../../../../core/widgets/admin_field.dart';
 import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
+import '../../../categories/data/repository/categories_repository.dart';
+import '../../../categories/domain/entities/category.dart';
 import '../../../presets/domain/entities/presets.dart';
 import '../../../presets/presentation/widgets/product_variants_section.dart';
-import '../../../suppliers/data/repository/suppliers_repository.dart';
-import '../../../suppliers/domain/entities/supplier.dart';
 import '../../domain/entities/product.dart';
 import '../cubits/products_cubit.dart';
 
@@ -40,7 +39,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
   static const CatalogPresets _presets = DefaultPresets.all;
 
   late final TextEditingController _nameController;
-  late final TextEditingController _categoryController;
   late final TextEditingController _priceController;
   late final TextEditingController _costPriceController;
   late final TextEditingController _shippingPriceController;
@@ -58,8 +56,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late Set<String> _sizes;
   late Set<String> _colorIds;
   SizeGuideTemplate? _sizeGuide;
-  String? _supplierId;
-  late Future<List<Supplier>> _suppliersFuture;
+  String? _categoryId;
+  late Future<List<Category>> _categoriesFuture;
 
   bool get _isEditing => widget.product != null;
 
@@ -68,7 +66,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
     super.initState();
     final p = widget.product;
     _nameController = TextEditingController(text: p?.name ?? '');
-    _categoryController = TextEditingController(text: p?.category ?? '');
     _priceController = TextEditingController(
       text: p == null ? '' : p.price.toStringAsFixed(0),
     );
@@ -95,14 +92,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _sizes = {...?p?.sizes};
     _colorIds = {...?p?.colorIds};
     _sizeGuide = p?.sizeGuide;
-    _supplierId = p?.supplierId;
-    _suppliersFuture = GetIt.instance<SuppliersRepository>().getSuppliers();
+    _categoryId = null;
+    _categoriesFuture = GetIt.instance<CategoriesRepository>().getCategories();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _categoryController.dispose();
     _priceController.dispose();
     _costPriceController.dispose();
     _shippingPriceController.dispose();
@@ -115,20 +111,41 @@ class _ProductFormPageState extends State<ProductFormPage> {
     super.dispose();
   }
 
+  /// ترقيم تلقائي عند الكتابة — كل سطر بيصير رقم. سطر
+  void _applyNumbering(TextEditingController controller) {
+    final text = controller.text;
+    final lines = text.split('\n');
+    final result = <String>[];
+    int counter = 1;
+    for (final line in lines) {
+      final stripped = line.replaceAll(RegExp(r'^\d+\.\s*'), '').trim();
+      if (stripped.isEmpty) {
+        result.add('');
+      } else {
+        result.add('$counter. $stripped');
+        counter++;
+      }
+    }
+    final formatted = result.join('\n');
+    if (formatted != text) {
+      controller.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+
   void _save() {
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
     final costPrice = double.tryParse(_costPriceController.text.trim());
     final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
-
     final discountPercentage = double.tryParse(_discountController.text.trim());
 
     final product = Product(
       id: widget.product?.id ?? 'P-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
-      category: _categoryController.text.trim().isEmpty
-          ? null
-          : _categoryController.text.trim(),
+      category: _categoryId,
       price: price,
       costPrice: costPrice,
       shippingPrice: shippingPrice,
@@ -150,7 +167,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       sizes: _sizes,
       colorIds: _colorIds,
       sizeGuide: _sizeGuide,
-      supplierId: _supplierId,
+      supplierId: null,
       discountPercentage: discountPercentage,
     );
 
@@ -178,9 +195,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                       label: AdminStrings.delete,
                       kind: AdminButtonKind.danger,
                       onPressed: () {
-                        context.read<ProductsCubit>().deleteProduct(
-                          widget.product!.id,
-                        );
+                        context.read<ProductsCubit>().deleteProduct(widget.product!.id);
                         Navigator.of(dialogContext).pop();
                         Navigator.of(context).pop();
                       },
@@ -226,14 +241,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AdminConstants.maxContentWidth,
-          ),
+          constraints: const BoxConstraints(maxWidth: AdminConstants.maxContentWidth),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AdminConstants.spacingLg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ===== معلومات أساسية =====
                 AdminCard(
                   title: AdminStrings.basicInfo,
                   child: Column(
@@ -243,17 +257,46 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         isRequired: true,
                         child: AdminTextInput(controller: _nameController),
                       ),
+                      // قائمة منسدلة للأقسام
                       AdminField(
                         label: AdminStrings.productCategory,
-                        child: AdminTextInput(controller: _categoryController),
+                        child: FutureBuilder<List<Category>>(
+                          future: _categoriesFuture,
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const CircularProgressIndicator();
+                            final categories = snapshot.data!;
+                            final validId = categories.any((c) => c.id == _categoryId)
+                                ? _categoryId
+                                : null;
+                            return DropdownButtonFormField<String>(
+                              value: validId,
+                              dropdownColor: AdminColors.surface,
+                              style: AdminTextStyles.body,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: AdminColors.border),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: AdminColors.gold),
+                                ),
+                              ),
+                              hint: Text(AdminStrings.selectCategory, style: AdminTextStyles.caption),
+                              items: categories
+                                  .map((c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name, style: AdminTextStyles.body),
+                              ))
+                                  .toList(),
+                              onChanged: (id) => setState(() => _categoryId = id),
+                            );
+                          },
+                        ),
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            AdminStrings.productIsNew,
-                            style: AdminTextStyles.label,
-                          ),
+                          Text(AdminStrings.productIsNew, style: AdminTextStyles.label),
                           Switch(
                             value: _isNew,
                             activeColor: AdminColors.gold,
@@ -268,14 +311,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  AdminStrings.productOrderable,
-                                  style: AdminTextStyles.label,
-                                ),
-                                Text(
-                                  AdminStrings.productOrderableHint,
-                                  style: AdminTextStyles.caption,
-                                ),
+                                Text(AdminStrings.productOrderable, style: AdminTextStyles.label),
+                                Text(AdminStrings.productOrderableHint, style: AdminTextStyles.caption),
                               ],
                             ),
                           ),
@@ -290,6 +327,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
+
+                // ===== التسعير والمخزون =====
                 AdminCard(
                   title: AdminStrings.pricingAndStock,
                   child: Column(
@@ -310,8 +349,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           const SizedBox(width: AdminConstants.spacingMd),
                           Expanded(
                             child: AdminField(
-                              // Admin-only per 8.2 — never sent to the client
-                              // app. Feeds the net-profit number in Analytics.
                               label: AdminStrings.productCostPrice,
                               child: AdminTextInput(
                                 controller: _costPriceController,
@@ -326,9 +363,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         children: [
                           Expanded(
                             child: AdminField(
-                              // Optional — separate from the product's own
-                              // price. Most products won't set this; a flat
-                              // delivery fee applies to them instead.
                               label: AdminStrings.productShippingPrice,
                               child: AdminTextInput(
                                 controller: _shippingPriceController,
@@ -353,28 +387,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
-                AdminCard(
-                  title: AdminStrings.productSupplier,
-                  child: FutureBuilder<List<Supplier>>(
-                    future: _suppliersFuture,
-                    builder: (context, snapshot) {
-                      final suppliers = snapshot.data ?? const [];
-                      if (suppliers.isEmpty) {
-                        return Text(
-                          AdminStrings.noData,
-                          style: AdminTextStyles.caption.copyWith(color: AdminColors.textDisabled),
-                        );
-                      }
-                      return AdminOptionChips<String>(
-                        options: suppliers.map((s) => s.id).toList(),
-                        selected: _supplierId,
-                        labelOf: (id) => suppliers.firstWhere((s) => s.id == id).name,
-                        onChanged: (id) => setState(() => _supplierId = id),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: AdminConstants.spacingLg),
+
+                // ===== الصور =====
                 AdminCard(
                   title: AdminStrings.productImages,
                   child: AdminImagePicker(
@@ -383,6 +397,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
+
+                // ===== المتغيرات =====
                 ProductVariantsSection(
                   presets: _presets,
                   sizeSet: _sizeSet,
@@ -392,10 +408,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   onSizeSetChanged: (set) => setState(() => _sizeSet = set),
                   onSizesChanged: (sizes) => setState(() => _sizes = sizes),
                   onColorsChanged: (ids) => setState(() => _colorIds = ids),
-                  onSizeGuideChanged: (guide) =>
-                      setState(() => _sizeGuide = guide),
+                  onSizeGuideChanged: (guide) => setState(() => _sizeGuide = guide),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
+
+                // ===== التفاصيل (مع ترقيم تلقائي) =====
                 AdminCard(
                   title: AdminStrings.details,
                   child: Column(
@@ -411,27 +428,32 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         label: AdminStrings.productIngredients,
                         child: AdminTextInput(
                           controller: _ingredientsController,
-                          maxLines: 2,
+                          maxLines: 5,
+                          onChanged: (_) => _applyNumbering(_ingredientsController),
                         ),
                       ),
                       AdminField(
                         label: AdminStrings.productBenefits,
                         child: AdminTextInput(
                           controller: _benefitsController,
-                          maxLines: 2,
+                          maxLines: 5,
+                          onChanged: (_) => _applyNumbering(_benefitsController),
                         ),
                       ),
                       AdminField(
                         label: AdminStrings.productUsage,
                         child: AdminTextInput(
                           controller: _usageController,
-                          maxLines: 2,
+                          maxLines: 5,
+                          onChanged: (_) => _applyNumbering(_usageController),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
+
+                // ===== الخصم =====
                 AdminCard(
                   title: AdminStrings.productDiscount,
                   child: Column(

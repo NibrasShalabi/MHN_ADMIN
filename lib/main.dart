@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -6,10 +7,11 @@ import 'core/injector/injector.dart';
 import 'core/theme/admin_colors.dart';
 import 'core/theme/admin_text_styles.dart';
 import 'features/auth/presentation/pages/login_page.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Arabic date formatting data — loaded once, before anything renders.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await initializeDateFormatting('ar');
   setupInjector();
   runApp(const AdminApp());
@@ -36,16 +38,10 @@ class AdminApp extends StatelessWidget {
         dividerColor: AdminColors.border,
         textTheme: const TextTheme(bodyMedium: AdminTextStyles.body),
       ),
-      // Arabic-only, same as the app: RTL is forced through `builder`
-      // rather than a Locale, because MaterialApp inserts its own
-      // Directionality that would override anything wrapped outside it.
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,
         child: child ?? const SizedBox.shrink(),
       ),
-      // TODO(routing): move to go_router once there are deep links worth
-      // addressing. Until then the shell owns section switching, and a
-      // router would add indirection without buying anything.
       home: const LoginPage(),
     );
   }

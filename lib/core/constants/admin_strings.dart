@@ -393,6 +393,7 @@ class AdminStrings {
   static const String recentOrders = 'آخر الطلبات';
   static const String quickActions = 'اختصارات';
   static const String viewAll = 'عرض الكل';
+  static const String selectCategory = 'اختر قسماً';
 
 
 

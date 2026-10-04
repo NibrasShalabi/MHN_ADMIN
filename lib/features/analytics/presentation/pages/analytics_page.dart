@@ -26,7 +26,8 @@ class AnalyticsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => AnalyticsCubit(GetIt.instance<AnalyticsRepository>())..load(),
+      create: (_) =>
+          AnalyticsCubit(GetIt.instance<AnalyticsRepository>())..load(),
       child: const _AnalyticsView(),
     );
   }
@@ -49,14 +50,17 @@ class _AnalyticsView extends StatelessWidget {
 
     return BlocBuilder<AnalyticsCubit, AnalyticsState>(
       builder: (context, state) {
-        if (state.status == AnalyticsPageStatus.loading || state.status == AnalyticsPageStatus.initial) {
+        if (state.status == AnalyticsPageStatus.loading ||
+            state.status == AnalyticsPageStatus.initial) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: AdminConstants.spacingXl),
             child: Center(child: CircularProgressIndicator()),
           );
         }
         if (state.status == AnalyticsPageStatus.error) {
-          return Center(child: Text(state.errorMessage ?? AdminStrings.somethingWentWrong));
+          return Center(
+            child: Text(state.errorMessage ?? AdminStrings.somethingWentWrong),
+          );
         }
 
         final cubit = context.read<AnalyticsCubit>();
@@ -96,11 +100,11 @@ class _AnalyticsView extends StatelessWidget {
   }
 
   Widget _buildFinancialSection(
-      AnalyticsState state,
-      List<DailyPoint> daily,
-      List<DailyPoint> previous,
-      NumberFormat currency,
-      ) {
+    AnalyticsState state,
+    List<DailyPoint> daily,
+    List<DailyPoint> previous,
+    NumberFormat currency,
+  ) {
     final totalOrders = daily.fold<int>(0, (s, d) => s + d.orders);
     final completed = daily.fold<int>(0, (s, d) => s + d.completed);
     final cancelled = daily.fold<int>(0, (s, d) => s + d.cancelled);
@@ -144,19 +148,19 @@ class _AnalyticsView extends StatelessWidget {
               ),
               StatCard(
                 label: AdminStrings.revenue,
-                value: '${currency.format(revenue)} ل.س',
+                value: '\$${currency.format(revenue)}',
                 icon: Icons.payments_outlined,
                 trend: _trend(revenue, previous, prevRevenue),
               ),
               StatCard(
                 label: AdminStrings.netProfit,
-                value: '${currency.format(state.data.netProfit)} ل.س',
+                value: '\$${currency.format(state.data.netProfit)}',
                 valueColor: AdminColors.gold,
                 icon: Icons.trending_up,
               ),
               StatCard(
                 label: AdminStrings.averageOrderValue,
-                value: '${currency.format(state.data.averageOrderValue)} ل.س',
+                value: '\$${currency.format(state.data.averageOrderValue)}',
                 icon: Icons.calculate_outlined,
               ),
             ];
@@ -164,7 +168,12 @@ class _AnalyticsView extends StatelessWidget {
               spacing: AdminConstants.spacingMd,
               runSpacing: AdminConstants.spacingMd,
               children: cards
-                  .map((c) => SizedBox(width: isCompact ? double.infinity : 210, child: c))
+                  .map(
+                    (c) => SizedBox(
+                      width: isCompact ? double.infinity : 210,
+                      child: c,
+                    ),
+                  )
                   .toList(),
             );
           },
@@ -256,7 +265,7 @@ class _AnalyticsView extends StatelessWidget {
               unit: AdminStrings.revenue,
               icon: Icons.savings_outlined,
               accentColor: AdminColors.gold,
-              formatValue: (v) => currency.format(v),
+              formatValue: (v) => '\$${currency.format(v)}',
             ),
           ],
         ),
@@ -314,13 +323,19 @@ class _OrdersTrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (daily.isEmpty) {
-      return Center(child: Text(AdminStrings.noData, style: AdminTextStyles.caption));
+      return Center(
+        child: Text(AdminStrings.noData, style: AdminTextStyles.caption),
+      );
     }
 
-    final maxOrders = daily.map((d) => d.orders).reduce((a, b) => a > b ? a : b).toDouble();
+    final maxOrders = daily
+        .map((d) => d.orders)
+        .reduce((a, b) => a > b ? a : b)
+        .toDouble();
     final peakY = maxOrders * 1.25;
     final spots = [
-      for (var i = 0; i < daily.length; i++) FlSpot(i.toDouble(), daily[i].orders.toDouble()),
+      for (var i = 0; i < daily.length; i++)
+        FlSpot(i.toDouble(), daily[i].orders.toDouble()),
     ];
 
     // A handful of evenly-spaced date labels — one per day would collide
@@ -330,7 +345,10 @@ class _OrdersTrendChart extends StatelessWidget {
     final dateFormat = DateFormat('d/M', 'ar');
 
     return Padding(
-      padding: const EdgeInsets.only(top: AdminConstants.spacingMd, left: AdminConstants.spacingSm),
+      padding: const EdgeInsets.only(
+        top: AdminConstants.spacingMd,
+        left: AdminConstants.spacingSm,
+      ),
       child: LineChart(
         LineChartData(
           minY: 0,
@@ -339,16 +357,18 @@ class _OrdersTrendChart extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             horizontalInterval: (peakY / 4).clamp(1, double.infinity),
-            getDrawingHorizontalLine: (_) => const FlLine(
-              color: AdminColors.border,
-              strokeWidth: 1,
-            ),
+            getDrawingHorizontalLine: (_) =>
+                const FlLine(color: AdminColors.border, strokeWidth: 1),
           ),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
             show: true,
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -356,7 +376,10 @@ class _OrdersTrendChart extends StatelessWidget {
                 interval: (peakY / 4).clamp(1, double.infinity),
                 getTitlesWidget: (value, meta) => Text(
                   value.toInt().toString(),
-                  style: AdminTextStyles.caption.copyWith(color: AdminColors.textDisabled, fontSize: 10),
+                  style: AdminTextStyles.caption.copyWith(
+                    color: AdminColors.textDisabled,
+                    fontSize: 10,
+                  ),
                 ),
               ),
             ),
@@ -367,13 +390,18 @@ class _OrdersTrendChart extends StatelessWidget {
                 interval: labelStep.toDouble(),
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= daily.length) return const SizedBox.shrink();
+                  if (index < 0 || index >= daily.length)
+                    return const SizedBox.shrink();
                   return Padding(
-                    padding: const EdgeInsets.only(top: AdminConstants.spacingXs),
+                    padding: const EdgeInsets.only(
+                      top: AdminConstants.spacingXs,
+                    ),
                     child: Text(
                       dateFormat.format(daily[index].date),
-                      style: AdminTextStyles.caption
-                          .copyWith(color: AdminColors.textDisabled, fontSize: 10),
+                      style: AdminTextStyles.caption.copyWith(
+                        color: AdminColors.textDisabled,
+                        fontSize: 10,
+                      ),
                     ),
                   );
                 },
@@ -383,30 +411,43 @@ class _OrdersTrendChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             getTouchedSpotIndicator: (barData, indexes) => indexes.map((_) {
               return TouchedSpotIndicatorData(
-                const FlLine(color: AdminColors.gold, strokeWidth: 1, dashArray: [3, 3]),
+                const FlLine(
+                  color: AdminColors.gold,
+                  strokeWidth: 1,
+                  dashArray: [3, 3],
+                ),
                 FlDotData(
-                  getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
-                    radius: 4,
-                    color: AdminColors.gold,
-                    strokeWidth: 2,
-                    strokeColor: AdminColors.surfaceRaised,
-                  ),
+                  getDotPainter: (spot, percent, bar, index) =>
+                      FlDotCirclePainter(
+                        radius: 4,
+                        color: AdminColors.gold,
+                        strokeWidth: 2,
+                        strokeColor: AdminColors.surfaceRaised,
+                      ),
                 ),
               );
             }).toList(),
             touchTooltipData: LineTouchTooltipData(
               getTooltipColor: (_) => AdminColors.surfaceRaised,
-              tooltipBorder: const BorderSide(color: AdminColors.gold, width: 1),
+              tooltipBorder: const BorderSide(
+                color: AdminColors.gold,
+                width: 1,
+              ),
               tooltipRoundedRadius: AdminConstants.radiusSm,
               getTooltipItems: (spots) => spots.map((s) {
                 final point = daily[s.x.toInt()];
                 return LineTooltipItem(
                   '${s.y.toInt()} ${AdminStrings.orders}\n',
-                  AdminTextStyles.body.copyWith(color: AdminColors.gold, fontWeight: FontWeight.bold),
+                  AdminTextStyles.body.copyWith(
+                    color: AdminColors.gold,
+                    fontWeight: FontWeight.bold,
+                  ),
                   children: [
                     TextSpan(
                       text: DateFormat('d MMMM', 'ar').format(point.date),
-                      style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary),
+                      style: AdminTextStyles.caption.copyWith(
+                        color: AdminColors.textSecondary,
+                      ),
                     ),
                   ],
                 );
@@ -455,7 +496,9 @@ class _StatusDonut extends StatelessWidget {
     if (total == 0) {
       return SizedBox(
         height: 200,
-        child: Center(child: Text(AdminStrings.noData, style: AdminTextStyles.caption)),
+        child: Center(
+          child: Text(AdminStrings.noData, style: AdminTextStyles.caption),
+        ),
       );
     }
 
@@ -479,25 +522,35 @@ class _StatusDonut extends StatelessWidget {
                       value: completed.toDouble(),
                       color: AdminColors.success,
                       radius: 28,
-                      title: completedPct >= 8 ? '${completedPct.toStringAsFixed(0)}%' : '',
+                      title: completedPct >= 8
+                          ? '${completedPct.toStringAsFixed(0)}%'
+                          : '',
                       titleStyle: AdminTextStyles.caption.copyWith(
                         color: AdminColors.surfaceRaised,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
-                      borderSide: const BorderSide(color: AdminColors.surface, width: 2),
+                      borderSide: const BorderSide(
+                        color: AdminColors.surface,
+                        width: 2,
+                      ),
                     ),
                     PieChartSectionData(
                       value: cancelled.toDouble(),
                       color: AdminColors.danger,
                       radius: 28,
-                      title: cancelledPct >= 8 ? '${cancelledPct.toStringAsFixed(0)}%' : '',
+                      title: cancelledPct >= 8
+                          ? '${cancelledPct.toStringAsFixed(0)}%'
+                          : '',
                       titleStyle: AdminTextStyles.caption.copyWith(
                         color: AdminColors.surfaceRaised,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
-                      borderSide: const BorderSide(color: AdminColors.surface, width: 2),
+                      borderSide: const BorderSide(
+                        color: AdminColors.surface,
+                        width: 2,
+                      ),
                     ),
                   ],
                 ),
@@ -509,11 +562,15 @@ class _StatusDonut extends StatelessWidget {
                 children: [
                   Text(
                     '$total',
-                    style: AdminTextStyles.pageTitle.copyWith(color: AdminColors.gold),
+                    style: AdminTextStyles.pageTitle.copyWith(
+                      color: AdminColors.gold,
+                    ),
                   ),
                   Text(
                     AdminStrings.totalOrders,
-                    style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary),
+                    style: AdminTextStyles.caption.copyWith(
+                      color: AdminColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -524,8 +581,16 @@ class _StatusDonut extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            AdminLegendDot(color: AdminColors.success, label: AdminStrings.completedOrders, value: completed),
-            AdminLegendDot(color: AdminColors.danger, label: AdminStrings.cancelledOrders, value: cancelled),
+            AdminLegendDot(
+              color: AdminColors.success,
+              label: AdminStrings.completedOrders,
+              value: completed,
+            ),
+            AdminLegendDot(
+              color: AdminColors.danger,
+              label: AdminStrings.cancelledOrders,
+              value: cancelled,
+            ),
           ],
         ),
       ],
@@ -557,34 +622,46 @@ class _RankedTable extends StatelessWidget {
     return AdminCard(
       title: title,
       actions: icon != null
-          ? [Icon(icon, size: 16, color: accentColor ?? AdminColors.textSecondary)]
+          ? [
+              Icon(
+                icon,
+                size: 16,
+                color: accentColor ?? AdminColors.textSecondary,
+              ),
+            ]
           : const [],
       child: entries.isEmpty && emptyNote != null
           ? Padding(
-        padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingMd),
-        child: Text(
-          emptyNote!,
-          style: AdminTextStyles.caption.copyWith(color: AdminColors.textDisabled),
-        ),
-      )
+              padding: const EdgeInsets.symmetric(
+                vertical: AdminConstants.spacingMd,
+              ),
+              child: Text(
+                emptyNote!,
+                style: AdminTextStyles.caption.copyWith(
+                  color: AdminColors.textDisabled,
+                ),
+              ),
+            )
           : AdminDataTable(
-        emptyMessage: AdminStrings.noData,
-        rowCount: entries.length,
-        columns: [
-          const AdminColumn('', flex: 3),
-          AdminColumn(unit, flex: 1),
-        ],
-        cellsBuilder: (index) {
-          final entry = entries[index];
-          return [
-            Text(entry.name, style: AdminTextStyles.caption),
-            Text(
-              formatValue != null ? formatValue!(entry.value) : '${entry.value}',
-              style: AdminTextStyles.caption.copyWith(color: accentColor),
+              emptyMessage: AdminStrings.noData,
+              rowCount: entries.length,
+              columns: [
+                const AdminColumn('', flex: 3),
+                AdminColumn(unit, flex: 1),
+              ],
+              cellsBuilder: (index) {
+                final entry = entries[index];
+                return [
+                  Text(entry.name, style: AdminTextStyles.caption),
+                  Text(
+                    formatValue != null
+                        ? formatValue!(entry.value)
+                        : '${entry.value}',
+                    style: AdminTextStyles.caption.copyWith(color: accentColor),
+                  ),
+                ];
+              },
             ),
-          ];
-        },
-      ),
     );
   }
 }

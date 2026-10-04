@@ -1,50 +1,104 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../features/analytics/data/repository/analytics_repository.dart';
 import '../../features/analytics/data/repository/fake_analytics_repository.dart';
+import '../../features/analytics/data/repository/firebase_analytics_repository.dart';
 import '../../features/auth/data/repository/auth_repository.dart';
-import '../../features/auth/data/repository/fake_auth_repository.dart';
+import '../../features/auth/data/repository/firebase_admin_auth_repository.dart';
 import '../../features/categories/data/repository/categories_repository.dart';
-import '../../features/categories/data/repository/fake_categories_repository.dart';
+import '../../features/categories/data/repository/firebase_admin_categories_repository.dart';
+import '../../features/deals/data/repositories/deals_admin_repository.dart';
+import '../../features/deals/data/repositories/firebase_admin_deals_repository.dart';
 import '../../features/fitness/data/repository/fake_fitness_repository.dart';
+import '../../features/fitness/data/repository/firebase_admin_fitness_repository.dart';
 import '../../features/fitness/data/repository/fitness_repository.dart';
-import '../../features/home_banners/data/repository/fake_promo_banners_repository.dart';
+import '../../features/home_banners/data/repository/firebase_admin_promo_banners_repository.dart';
 import '../../features/home_banners/data/repository/promo_banners_repository.dart';
 import '../../features/loyalty/data/repository/fake_loyalty_repository.dart';
+import '../../features/loyalty/data/repository/firebase_admin_loyalty_repository.dart';
 import '../../features/loyalty/data/repository/loyalty_repository.dart';
-import '../../features/orders/data/repository/fake_orders_repository.dart';
+import '../../features/orders/data/repository/firebase_admin_orders_repository.dart';
 import '../../features/orders/data/repository/orders_repository.dart';
 import '../../features/presets/data/repository/fake_presets_repository.dart';
+import '../../features/presets/data/repository/firebase_admin_presets_repository.dart';
 import '../../features/presets/data/repository/presets_repository.dart';
-import '../../features/products/data/repository/fake_products_repository.dart';
+import '../../features/products/data/repository/firebase_admin_products_repository.dart';
 import '../../features/products/data/repository/products_repository.dart';
-import '../../features/suggestions/data/repository/fake_suggestions_repository.dart';
+import '../../features/review/data/repository/firebase_reviews_repository.dart';
+import '../../features/review/data/repository/reviews_repository.dart';
+import '../../features/suggestions/data/repository/firebase_admin_suggestions_repository.dart';
 import '../../features/suggestions/data/repository/suggestions_repository.dart';
-import '../../features/suppliers/data/repository/fake_suppliers_repository.dart';
+import '../../features/suppliers/data/repository/firebase_admin_suppliers_repository.dart';
 import '../../features/suppliers/data/repository/suppliers_repository.dart';
-import '../../features/support/data/repository/fake_support_repository.dart';
+import '../../features/support/data/repository/firebase_admin_support_repository.dart';
 import '../../features/support/data/repository/support_repository.dart';
-import '../../features/deals/data/repositories/deals_admin_repository.dart';
 
 final getIt = GetIt.instance;
 
-/// نقطة تسجيل واحدة لكل الـ repositories. كل فيتشر جديد بضيف سطر هون بس.
 void setupInjector() {
-  getIt.registerLazySingleton<OrdersRepository>(() => FakeOrdersRepository());
-  getIt.registerLazySingleton<ProductsRepository>(() => FakeProductsRepository());
-  getIt.registerLazySingleton<CategoriesRepository>(() => FakeCategoriesRepository());
-  getIt.registerLazySingleton<SuggestionsRepository>(() => FakeSuggestionsRepository());
-  getIt.registerLazySingleton<SupportRepository>(() => FakeSupportRepository());
-  getIt.registerLazySingleton<FitnessRepository>(() => FakeFitnessRepository());
-  getIt.registerLazySingleton<PresetsRepository>(() => FakePresetsRepository());
-  getIt.registerLazySingleton<LoyaltyRepository>(() => FakeLoyaltyRepository());
-  getIt.registerLazySingleton<PromoBannersRepository>(() => FakePromoBannersRepository());
-  getIt.registerLazySingleton<SuppliersRepository>(() => FakeSuppliersRepository());
-  getIt.registerLazySingleton<AuthRepository>(() => FakeAuthRepository());
-  // (about repository removed with the About section)
-  getIt.registerLazySingleton<DealsAdminRepository>(() => FakeDealsAdminRepository());
+  // نقطة وصول واحدة للـ Firestore
+  final db = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'default',
+  );
+  final auth = FirebaseAuth.instance;
+
+  // ===== Auth =====
+  getIt.registerLazySingleton<AuthRepository>(
+        () => FirebaseAdminAuthRepository(auth),
+  );
+
+  // ===== Products =====
+  getIt.registerLazySingleton<ProductsRepository>(
+        () => FirebaseAdminProductsRepository(db),
+  );
+
+  // ===== Categories =====
+  getIt.registerLazySingleton<CategoriesRepository>(
+        () => FirebaseAdminCategoriesRepository(db),
+  );
+
+  // ===== Orders =====
+  getIt.registerLazySingleton<OrdersRepository>(
+        () => FirebaseAdminOrdersRepository(db),
+  );
+
+  // ===== Deals =====
+  getIt.registerLazySingleton<DealsAdminRepository>(
+        () => FirebaseAdminDealsRepository(db),
+  );
+
+  // ===== Suppliers =====
+  getIt.registerLazySingleton<SuppliersRepository>(
+        () => FirebaseAdminSuppliersRepository(db),
+  );
+
+  // ===== Suggestions =====
+  getIt.registerLazySingleton<SuggestionsRepository>(
+        () => FirebaseAdminSuggestionsRepository(db),
+  );
+
+  // ===== Support =====
+  getIt.registerLazySingleton<SupportRepository>(
+        () => FirebaseAdminSupportRepository(db),
+  );
+
+  // ===== Promo Banners =====
+  getIt.registerLazySingleton<PromoBannersRepository>(
+        () => FirebaseAdminPromoBannersRepository(db),
+  );
+
+  // ===== Fake (لسا ما فيهم Firestore collections) =====
+  getIt.registerLazySingleton<FitnessRepository>(() => FirebaseAdminFitnessRepository(db));
+  getIt.registerLazySingleton<LoyaltyRepository>(() => FirebaseAdminLoyaltyRepository(db));
+  getIt.registerLazySingleton<PresetsRepository>(() => FirebaseAdminPresetsRepository(db));
+  // ===== Analytics (يعتمد على باقي الـ repositories) =====
   getIt.registerLazySingleton<AnalyticsRepository>(
-        () => FakeAnalyticsRepository(
+        () => FirebaseAnalyticsRepository(
+      db,
       getIt<LoyaltyRepository>(),
       getIt<OrdersRepository>(),
       getIt<SupportRepository>(),
@@ -54,6 +108,7 @@ void setupInjector() {
       getIt<SuppliersRepository>(),
     ),
   );
-
-
+  getIt.registerLazySingleton<ReviewsRepository>(
+        () => FirebaseReviewsRepository(db),
+  );
 }

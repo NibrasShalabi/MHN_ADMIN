@@ -1,11 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../constants/admin_constants.dart';
 import '../constants/admin_strings.dart';
 import '../theme/admin_colors.dart';
 import '../theme/admin_text_styles.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
 
-/// One entry in the dashboard sidebar.
 class AdminNavItem {
   final String id;
   final String label;
@@ -14,16 +15,10 @@ class AdminNavItem {
   const AdminNavItem({required this.id, required this.label, required this.icon});
 }
 
-/// Dashboard frame: fixed sidebar on wide screens, drawer on narrow ones.
-///
-/// The sidebar is pinned rather than collapsible on desktop — an admin
-/// moves between orders, products and support constantly, and hiding that
-/// behind a toggle adds a click to every one of those moves.
 class AdminShell extends StatelessWidget {
   final List<AdminNavItem> items;
   final String selectedId;
   final ValueChanged<String> onSelect;
-
   final String title;
   final List<Widget> actions;
   final Widget child;
@@ -75,8 +70,6 @@ class AdminShell extends StatelessWidget {
               ],
             ),
           ),
-          // RTL: the sidebar belongs on the right, which is where `Row`
-          // puts its last child.
           if (!isCompact) sidebar,
         ],
       ),
@@ -123,6 +116,31 @@ class _Sidebar extends StatelessWidget {
                 },
               ),
             ),
+            const Divider(color: AdminColors.border, height: 1),
+            InkWell(
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                        (_) => false,
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(AdminConstants.spacingLg),
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, size: 20, color: AdminColors.textSecondary),
+                    const SizedBox(width: AdminConstants.spacingMd),
+                    Text(
+                      'تسجيل الخروج',
+                      style: AdminTextStyles.body.copyWith(color: AdminColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -151,8 +169,6 @@ class _NavTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? AdminColors.surface : null,
           border: BorderDirectional(
-            // Marker on the inner edge — in RTL that's the left side of
-            // the sidebar, facing the content.
             end: BorderSide(
               color: isSelected ? AdminColors.gold : Colors.transparent,
               width: 3,

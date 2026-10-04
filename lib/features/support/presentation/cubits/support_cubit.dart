@@ -9,12 +9,13 @@ class SupportCubit extends Cubit<SupportState> {
   SupportCubit(this._repository) : super(const SupportState());
 
   Future<void> loadMessages() async {
+    if (isClosed) return;
     emit(state.copyWith(status: SupportPageStatus.loading));
     try {
       final messages = await _repository.getMessages();
-      emit(state.copyWith(status: SupportPageStatus.loaded, messages: messages));
+      if (!isClosed) emit(state.copyWith(status: SupportPageStatus.loaded, messages: messages));
     } catch (e) {
-      emit(state.copyWith(status: SupportPageStatus.error, errorMessage: e.toString()));
+      if (!isClosed) emit(state.copyWith(status: SupportPageStatus.error, errorMessage: e.toString()));
     }
   }
 
@@ -23,3 +24,4 @@ class SupportCubit extends Cubit<SupportState> {
     await loadMessages();
   }
 }
+

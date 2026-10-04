@@ -13,6 +13,7 @@ import '../../../loyalty/presentation/pages/loyalty_page.dart';
 import '../../../orders/presentation/pages/orders_page.dart';
 import '../../../presets/presentation/pages/presets_page.dart';
 import '../../../home_banners/presentation/pages/promo_banners_page.dart';
+import '../../../review/presentation/pages/reviews_page.dart';
 import '../../../suppliers/presentation/pages/suppliers_page.dart';
 import '../../../products/presentation/pages/products_page.dart';
 import '../../../suggestions/presentation/pages/suggestions_page.dart';
@@ -77,6 +78,7 @@ class _SectionBody extends StatelessWidget {
         AdminSection.suppliers => const SuppliersPage(),
         AdminSection.analytics => const AnalyticsPage(),
         AdminSection.deals => const DealsAdminPage(),
+        AdminSection.reviews => const ReviewsPage(),
       },
     );
   }
