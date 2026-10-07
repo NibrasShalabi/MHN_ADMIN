@@ -6,6 +6,7 @@ import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
+import '../../../../core/widgets/admin_dropdown.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_field.dart';
@@ -216,34 +217,11 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
             AdminField(
               label: AdminStrings.selectProduct,
               isRequired: true,
-              child: DropdownButtonFormField<admin_product.Product>(
+              child: AdminDropdown<admin_product.Product>(
                 value: _selectedProduct,
-                dropdownColor: AdminColors.surfaceRaised,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: AdminColors.surfaceRaised,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AdminConstants.spacingMd,
-                    vertical: AdminConstants.spacingSm,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
-                    borderSide: const BorderSide(color: AdminColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
-                    borderSide: const BorderSide(color: AdminColors.border),
-                  ),
-                ),
-                style: AdminTextStyles.body,
-                hint: Text(AdminStrings.selectProduct, style: AdminTextStyles.caption),
-                items: _products.map((p) => DropdownMenuItem(
-                  value: p,
-                  child: Text(
-                    '${p.name} — \$${p.price.toStringAsFixed(2)}',
-                    style: AdminTextStyles.body,
-                  ),
-                )).toList(),
+                items: _products,
+                labelOf: (p) => '${p.name} — \$${p.price.toStringAsFixed(2)}',
+                hint: AdminStrings.selectProduct,
                 onChanged: (p) => setState(() => _selectedProduct = p),
               ),
             ),

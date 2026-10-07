@@ -4,6 +4,8 @@ import '../../../loyalty/data/repository/loyalty_repository.dart';
 import '../../../orders/data/repository/orders_repository.dart';
 import '../../../orders/domain/entities/order.dart';
 import '../../../products/data/repository/products_repository.dart';
+import '../../../products/domain/entities/product.dart';
+import '../../../products/domain/entities/product_private.dart';
 import '../../../suggestions/data/repository/suggestions_repository.dart';
 import '../../../suppliers/data/repository/suppliers_repository.dart';
 import '../../../support/data/repository/support_repository.dart';
@@ -61,6 +63,7 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
       _loyaltyRepository.getTransactions(),
       _fitnessRepository.getSubmissions(),
       _db.collection('config').doc('stats').get(), // totalUsers
+      _productsRepository.getAllPrivate(), // costPrice — admin-only collection
     ]);
 
     final orders = results[0] as List<Order>;
@@ -71,6 +74,7 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
     final loyaltyTxs = results[5] as List;
     final submissions = results[6] as List;
     final statsDoc = results[7] as DocumentSnapshot<Map<String, dynamic>>;
+    final privateData = results[8] as Map<String, ProductPrivate>;
 
     final totalUsers = statsDoc.data()?['totalUsers'] as int? ?? 0;
 
@@ -79,9 +83,7 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
 
     // ===== Financial =====
     final totalRevenue = orders.fold<double>(0, (s, o) => s + (o as Order).totalPrice);
-    final margins = (products as List).where((p) => p.costPrice != null && p.price > 0)
-        .map((p) => (p.price - p.costPrice!) / p.price).toList();
-    final avgMargin = margins.isEmpty ? 0.0 : margins.reduce((a, b) => a + b) / margins.length;
+    final avgMargin = averageMargin(products.cast<Product>(), privateData);
     final averageOrderValue = orders.isEmpty ? 0.0 : totalRevenue / orders.length;
 
     // ===== Customers =====

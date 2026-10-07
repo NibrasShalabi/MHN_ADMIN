@@ -5,6 +5,7 @@ import '../../../loyalty/data/repository/loyalty_repository.dart';
 import '../../../orders/data/repository/orders_repository.dart';
 import '../../../orders/domain/entities/order.dart';
 import '../../../products/data/repository/products_repository.dart';
+import '../../../products/domain/entities/product_private.dart';
 import '../../../suggestions/data/repository/suggestions_repository.dart';
 import '../../../suppliers/data/repository/suppliers_repository.dart';
 import '../../../support/data/repository/support_repository.dart';
@@ -114,12 +115,7 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
     // priced products (see the field doc on AnalyticsData) rather than
     // summed per order, since OrderItem doesn't carry a product id yet.
     final totalRevenue = orders.fold<double>(0, (s, o) => s + o.totalPrice);
-    final margins = products
-        .where((p) => p.costPrice != null && p.price > 0)
-        .map((p) => (p.price - p.costPrice!) / p.price)
-        .toList();
-    final avgMargin =
-    margins.isEmpty ? 0.0 : margins.reduce((a, b) => a + b) / margins.length;
+    final avgMargin = averageMargin(products, await _productsRepository.getAllPrivate());
     final netProfit = totalRevenue * avgMargin;
     final averageOrderValue = orders.isEmpty ? 0.0 : totalRevenue / orders.length;
 

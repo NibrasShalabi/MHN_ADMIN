@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/product.dart';
+import '../../domain/entities/product_private.dart';
 import '../../../presets/domain/entities/presets.dart';
 import 'products_repository.dart';
 
@@ -9,26 +10,89 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
 
   FirebaseAdminProductsRepository(this._db);
 
+  static const String _private = 'productsPrivate';
+
   @override
   Future<List<Product>> getProducts() async {
     final snap = await _db.collection('products').get();
+    await _migrateLegacyCostPrices(snap.docs);
     return snap.docs.map(_fromDoc).toList();
   }
 
   @override
-  Future<void> addProduct(Product product) async {
-    await _db.collection('products').doc(product.id).set(_toMap(product));
+  Future<ProductPrivate> getPrivate(String productId) async {
+    final doc = await _db.collection(_private).doc(productId).get();
+    return doc.exists ? _privateFromMap(doc.data()!) : ProductPrivate.empty;
   }
 
   @override
-  Future<void> updateProduct(Product product) async {
-    await _db.collection('products').doc(product.id).update(_toMap(product));
+  Future<Map<String, ProductPrivate>> getAllPrivate() async {
+    final snap = await _db.collection(_private).get();
+    return {for (final doc in snap.docs) doc.id: _privateFromMap(doc.data())};
+  }
+
+  @override
+  Future<void> addProduct(Product product, ProductPrivate private) async {
+    final batch = _db.batch()
+      ..set(_db.collection('products').doc(product.id), {
+        ..._toMap(product),
+        'imageUrls': <String>[],
+        'createdAt': FieldValue.serverTimestamp(),
+      })
+      ..set(_db.collection(_private).doc(product.id), _privateToMap(private));
+    await batch.commit();
+  }
+
+  /// Leaves imageUrls / createdAt untouched — editing must never wipe
+  /// images or make an old product look new.
+  @override
+  Future<void> updateProduct(Product product, ProductPrivate private) async {
+    final batch = _db.batch()
+      ..update(_db.collection('products').doc(product.id), {
+        ..._toMap(product),
+        'costPrice': FieldValue.delete(),
+      })
+      ..set(_db.collection(_private).doc(product.id), _privateToMap(private), SetOptions(merge: true));
+    await batch.commit();
   }
 
   @override
   Future<void> deleteProduct(String id) async {
-    await _db.collection('products').doc(id).delete();
+    final batch = _db.batch()
+      ..delete(_db.collection('products').doc(id))
+      ..delete(_db.collection(_private).doc(id));
+    await batch.commit();
   }
+
+  /// One-time, self-healing: older products kept costPrice in the public
+  /// doc. Moves it to productsPrivate the first time the list loads.
+  Future<void> _migrateLegacyCostPrices(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    final legacy = docs.where((d) => d.data().containsKey('costPrice')).toList();
+    if (legacy.isEmpty) return;
+
+    // 2 writes per product, Firestore caps a batch at 500.
+    for (var i = 0; i < legacy.length; i += 200) {
+      final batch = _db.batch();
+      for (final doc in legacy.skip(i).take(200)) {
+        final cost = (doc.data()['costPrice'] as num?)?.toDouble();
+        if (cost != null) {
+          batch.set(_db.collection(_private).doc(doc.id), {'costPrice': cost}, SetOptions(merge: true));
+        }
+        batch.update(doc.reference, {'costPrice': FieldValue.delete()});
+      }
+      await batch.commit();
+    }
+  }
+
+  ProductPrivate _privateFromMap(Map<String, dynamic> d) => ProductPrivate(
+        costPrice: (d['costPrice'] as num?)?.toDouble(),
+        sourceUrl: d['sourceUrl'] as String?,
+      );
+
+  Map<String, dynamic> _privateToMap(ProductPrivate p) => {
+        'costPrice': p.costPrice,
+        'sourceUrl': p.sourceUrl,
+      };
 
   // ===== Mappers =====
 
@@ -64,8 +128,8 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       id: doc.id,
       name: d['name'] as String? ?? '',
       category: d['categoryId'] as String?,
+      filterId: d['filterId'] as String?,
       price: (d['price'] as num? ?? 0).toDouble(),
-      costPrice: (d['costPrice'] as num?)?.toDouble(),
       shippingPrice: (d['shippingPrice'] as num?)?.toDouble(),
       supplierId: d['supplierId'] as String?,
       stock: d['stock'] as int? ?? 0,
@@ -97,8 +161,8 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     return {
       'name': product.name,
       'categoryId': product.category,
+      'filterId': product.filterId,
       'price': product.price,
-      'costPrice': product.costPrice,
       'shippingPrice': product.shippingPrice,
       'supplierId': product.supplierId,
       'stock': product.stock,
@@ -116,9 +180,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
         'measurements': r.measurements,
       }).toList() ?? [],
       'discountPercentage': product.discountPercentage,
-      'imageUrls': [],
       'pricing': product.category == 'loyalty' ? 'points' : 'money',
-      'createdAt': FieldValue.serverTimestamp(),
     };
   }
 }

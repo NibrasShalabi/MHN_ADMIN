@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mhn_admin/features/products/presentation/pages/products_page.dart';
 
 import '../../../../core/constants/admin_constants.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
+import '../../../../core/widgets/admin_dropdown.dart';
 import '../../../../core/widgets/admin_field.dart';
 import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
@@ -19,6 +21,7 @@ import '../../../categories/domain/entities/category.dart';
 import '../../../presets/domain/entities/presets.dart';
 import '../../../presets/presentation/widgets/product_variants_section.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/entities/product_private.dart';
 import '../cubits/products_cubit.dart';
 
 class ProductFormPage extends StatefulWidget {
@@ -48,6 +51,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _benefitsController;
   late final TextEditingController _usageController;
   late final TextEditingController _discountController;
+  late final TextEditingController _sourceUrlController;
 
   late List<Uint8List> _images;
   late bool _isNew;
@@ -57,6 +61,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late Set<String> _colorIds;
   SizeGuideTemplate? _sizeGuide;
   String? _categoryId;
+  String? _filterId;
+
+  /// Save stays disabled until the admin-only data is loaded — saving
+  /// earlier would overwrite the stored cost/link with empty values.
+  late bool _privateLoaded;
   late Future<List<Category>> _categoriesFuture;
 
   bool get _isEditing => widget.product != null;
@@ -69,9 +78,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _priceController = TextEditingController(
       text: p == null ? '' : p.price.toStringAsFixed(0),
     );
-    _costPriceController = TextEditingController(
-      text: p?.costPrice == null ? '' : p!.costPrice!.toStringAsFixed(0),
-    );
+    _costPriceController = TextEditingController();
+    _sourceUrlController = TextEditingController();
     _shippingPriceController = TextEditingController(
       text: p?.shippingPrice == null ? '' : p!.shippingPrice!.toStringAsFixed(0),
     );
@@ -92,7 +100,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _sizes = {...?p?.sizes};
     _colorIds = {...?p?.colorIds};
     _sizeGuide = p?.sizeGuide;
-    _categoryId = null;
+    _categoryId = p?.category;
+    _filterId = p?.filterId;
+    _privateLoaded = p == null;
+    if (p != null) _loadPrivate(p.id);
     _categoriesFuture = GetIt.instance<CategoriesRepository>().getCategories();
   }
 
@@ -108,7 +119,28 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _benefitsController.dispose();
     _usageController.dispose();
     _discountController.dispose();
+    _sourceUrlController.dispose();
     super.dispose();
+  }
+
+  /// On failure save stays disabled — better than wiping the stored data.
+  Future<void> _loadPrivate(String productId) async {
+    final ProductPrivate private;
+    try {
+      private = await context.read<ProductsCubit>().loadPrivate(productId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text(AdminStrings.somethingWentWrong)));
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _costPriceController.text = private.costPrice?.toStringAsFixed(0) ?? '';
+      _sourceUrlController.text = private.sourceUrl ?? '';
+      _privateLoaded = true;
+    });
   }
 
   /// ترقيم تلقائي عند الكتابة — كل سطر بيصير رقم. سطر
@@ -135,6 +167,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
     }
   }
 
+  Future<void> _openSourceUrl() async {
+    final uri = Uri.tryParse(_sourceUrlController.text.trim());
+    if (uri == null || !uri.hasScheme) return;
+    await launchUrl(uri, webOnlyWindowName: '_blank');
+  }
+
   void _save() {
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
     final costPrice = double.tryParse(_costPriceController.text.trim());
@@ -146,8 +184,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
       id: widget.product?.id ?? 'P-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       category: _categoryId,
+      filterId: _filterId,
       price: price,
-      costPrice: costPrice,
       shippingPrice: shippingPrice,
       stock: stock,
       description: _descriptionController.text.trim(),
@@ -167,12 +205,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
       sizes: _sizes,
       colorIds: _colorIds,
       sizeGuide: _sizeGuide,
-      supplierId: null,
+      supplierId: widget.product?.supplierId,
       discountPercentage: discountPercentage,
     );
 
+    final sourceUrl = _sourceUrlController.text.trim();
+    final private = ProductPrivate(costPrice: costPrice, sourceUrl: sourceUrl.isEmpty ? null : sourceUrl);
+
     final cubit = context.read<ProductsCubit>();
-    _isEditing ? cubit.updateProduct(product) : cubit.addProduct(product);
+    _isEditing ? cubit.updateProduct(product, private) : cubit.addProduct(product, private);
     Navigator.of(context).pop();
   }
 
@@ -265,30 +306,35 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) return const CircularProgressIndicator();
                             final categories = snapshot.data!;
-                            final validId = categories.any((c) => c.id == _categoryId)
-                                ? _categoryId
-                                : null;
-                            return DropdownButtonFormField<String>(
-                              value: validId,
-                              dropdownColor: AdminColors.surface,
-                              style: AdminTextStyles.body,
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: AdminColors.border),
+                            final selected = categories.where((c) => c.id == _categoryId).firstOrNull;
+                            final filters = selected?.filters ?? const <ProductFilter>[];
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                AdminDropdown<Category>(
+                                  value: selected,
+                                  items: categories,
+                                  labelOf: (c) => c.name,
+                                  hint: AdminStrings.selectCategory,
+                                  onChanged: (c) => setState(() {
+                                    _categoryId = c?.id;
+                                    _filterId = null;
+                                  }),
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: AdminColors.gold),
-                                ),
-                              ),
-                              hint: Text(AdminStrings.selectCategory, style: AdminTextStyles.caption),
-                              items: categories
-                                  .map((c) => DropdownMenuItem(
-                                value: c.id,
-                                child: Text(c.name, style: AdminTextStyles.body),
-                              ))
-                                  .toList(),
-                              onChanged: (id) => setState(() => _categoryId = id),
+                                if (filters.isNotEmpty) ...[
+                                  const SizedBox(height: AdminConstants.spacingMd),
+                                  AdminField(
+                                    label: AdminStrings.productFilter,
+                                    child: AdminDropdown<ProductFilter>(
+                                      value: filters.where((f) => f.id == _filterId).firstOrNull,
+                                      items: filters,
+                                      labelOf: (f) => f.name,
+                                      hint: AdminStrings.selectFilter,
+                                      onChanged: (f) => setState(() => _filterId = f?.id),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             );
                           },
                         ),
@@ -382,6 +428,20 @@ class _ProductFormPageState extends State<ProductFormPage> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: AdminConstants.spacingMd),
+                      AdminField(
+                        label: AdminStrings.productSourceUrl,
+                        child: AdminTextInput(
+                          controller: _sourceUrlController,
+                          keyboardType: TextInputType.url,
+                          hint: 'https://',
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.open_in_new, color: AdminColors.gold),
+                            tooltip: AdminStrings.openLink,
+                            onPressed: _openSourceUrl,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -481,7 +541,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
-                AdminButton(label: AdminStrings.save, onPressed: _save),
+                AdminButton(label: AdminStrings.save, onPressed: _privateLoaded ? _save : null),
                 const SizedBox(height: AdminConstants.spacingLg),
               ],
             ),

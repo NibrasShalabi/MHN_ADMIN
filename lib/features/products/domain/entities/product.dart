@@ -8,12 +8,11 @@ class Product extends Equatable {
   final String id;
   final String name;
   final String? category;
-  final double price;
 
-  /// What the item costs the business, per 8.2 — admin-only. Never sent
-  /// in anything the client app reads; only used here to compute margin
-  /// and net profit in Analytics.
-  final double? costPrice;
+  /// One of the selected category's filters (its sub-section), if any.
+  final String? filterId;
+
+  final double price;
 
   /// Per-product shipping cost, separate from [price] — optional, most
   /// products won't set it (flat/negotiated delivery fee applies instead).
@@ -42,8 +41,8 @@ class Product extends Equatable {
     required this.id,
     required this.name,
     this.category,
+    this.filterId,
     required this.price,
-    this.costPrice,
     this.shippingPrice,
     this.supplierId,
     required this.stock,
@@ -64,8 +63,8 @@ class Product extends Equatable {
   Product copyWith({
     String? name,
     String? category,
+    String? filterId,
     double? price,
-    double? costPrice,
     double? shippingPrice,
     String? supplierId,
     int? stock,
@@ -86,8 +85,8 @@ class Product extends Equatable {
       id: id,
       name: name ?? this.name,
       category: category ?? this.category,
+      filterId: filterId ?? this.filterId,
       price: price ?? this.price,
-      costPrice: costPrice ?? this.costPrice,
       shippingPrice: shippingPrice ?? this.shippingPrice,
       supplierId: supplierId ?? this.supplierId,
       stock: stock ?? this.stock,
@@ -111,8 +110,8 @@ class Product extends Equatable {
     id,
     name,
     category,
+    filterId,
     price,
-    costPrice,
     shippingPrice,
     supplierId,
     stock,
