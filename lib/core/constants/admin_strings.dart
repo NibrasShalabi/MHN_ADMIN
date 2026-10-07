@@ -48,7 +48,6 @@ class AdminStrings {
   static const String productFilter = 'الفلتر';
   static const String selectFilter = 'اختر فلتراً (اختياري)';
   static const String productSourceUrl = 'رابط المنتج (لا يظهر للعميل)';
-  static const String openLink = 'فتح الرابط';
   static const String productPrice = 'السعر';
   static const String productCostPrice = 'سعر التكلفة (لا يظهر للعميل)';
   static const String productShippingPrice = 'سعر الشحن (اختياري)';
@@ -149,10 +148,10 @@ class AdminStrings {
   static const String suggestions = 'اقتراحات المنتجات';
   static const String suggestedBy = 'المقترِح';
   static const String suggestionLink = 'الرابط';
-  static const String openLink = 'فتح الرابط';
   static const String openLinkWarning =
       'سيُفتح رابط أرسله مستخدم. تأكد من الموقع قبل المتابعة:';
   static const String approve = 'موافقة';
+  static const String openLink = 'فتح الرابط';
   static const String reject = 'رفض';
   static const String statusUnderReview = 'قيد المراجعة';
   static const String statusApproved = 'مقبول';
