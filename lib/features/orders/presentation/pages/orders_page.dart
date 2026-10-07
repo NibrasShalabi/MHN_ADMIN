@@ -165,7 +165,12 @@ class _OrdersViewState extends State<_OrdersView> {
           ),
           const SizedBox(height: AdminConstants.spacingLg),
         ],
-        BlocBuilder<OrdersCubit, OrdersState>(
+        BlocConsumer<OrdersCubit, OrdersState>(
+          // Action errors (e.g. not enough points to confirm) — the list stays.
+          listenWhen: (prev, curr) =>
+              curr.status == OrdersStatus.loaded && curr.errorMessage != null && curr.errorMessage != prev.errorMessage,
+          listener: (context, state) => ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(state.errorMessage!))),
           builder: (context, state) {
             if (state.status == OrdersStatus.loading ||
                 state.status == OrdersStatus.initial) {

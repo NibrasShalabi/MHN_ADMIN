@@ -2,7 +2,9 @@ import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/orders_repository.dart';
 import '../../domain/entities/order.dart';
+import '../../domain/entities/insufficient_points_exception.dart';
 import '../../domain/entities/order_batch.dart';
+import '../../../../core/constants/admin_strings.dart';
 import 'orders_state.dart';
 
 class OrdersCubit extends SafeCubit<OrdersState> {
@@ -27,8 +29,17 @@ class OrdersCubit extends SafeCubit<OrdersState> {
         String? note,
         bool notifyCustomer = false,
       }) async {
-    await _repository.updateOrderStatus(orderId, status, note: note, notifyCustomer: notifyCustomer);
-    await loadOrders();
+    try {
+      await _repository.updateOrderStatus(orderId, status, note: note, notifyCustomer: notifyCustomer);
+      // Patched locally — reloading every order after each click was N reads.
+      emit(state.copyWith(orders: [
+        for (final o in state.orders) o.id == orderId ? o.copyWith(status: status, statusNote: note) : o,
+      ]));
+    } on InsufficientPointsException catch (e) {
+      emit(state.copyWith(errorMessage: AdminStrings.insufficientPoints(e.required, e.balance)));
+    } catch (e) {
+      emit(state.copyWith(errorMessage: e.toString()));
+    }
   }
 
   Future<void> createBatch(String name, List<String> orderIds) async {
@@ -50,9 +61,9 @@ class OrdersCubit extends SafeCubit<OrdersState> {
         String? note,
         bool notifyCustomer = false,
       }) async {
+    // One by one so a single order short on points doesn't block the rest.
     for (final orderId in batch.orderIds) {
-      await _repository.updateOrderStatus(orderId, status, note: note, notifyCustomer: notifyCustomer);
+      await updateStatus(orderId, status, note: note, notifyCustomer: notifyCustomer);
     }
-    await loadOrders();
   }
 }

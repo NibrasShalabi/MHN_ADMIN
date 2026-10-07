@@ -335,6 +335,9 @@ class AdminStrings {
   static const String correctionReason = 'سبب التصحيح';
   static const String correctionPoints = 'عدد النقاط (سالب للخصم)';
   static const String pointsWord = 'نقطة';
+  static const String orderPointsTotal = 'مجموع النقاط';
+  static String insufficientPoints(int required, int balance) =>
+      'رصيد العميل غير كافٍ لتأكيد الطلب — المطلوب $required نقطة والرصيد $balance';
   static const String transactionReason = 'السبب';
   static const String transactionDate = 'التاريخ';
   static const String costInPoints = 'التكلفة بالنقاط';

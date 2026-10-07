@@ -133,6 +133,11 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
           label: AdminStrings.orderTotal,
           value: '${currency.format(order.totalPrice)} ل.س',
         ),
+        if (order.pointsTotal > 0)
+          _InfoRow(
+            label: AdminStrings.orderPointsTotal,
+            value: '${currency.format(order.pointsTotal)} ${AdminStrings.pointsWord}',
+          ),
         const SizedBox(height: AdminConstants.spacingLg),
         const Divider(color: AdminColors.border, height: 1),
         const SizedBox(height: AdminConstants.spacingLg),

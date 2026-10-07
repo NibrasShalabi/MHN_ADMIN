@@ -19,6 +19,9 @@ class Order extends Equatable {
   final String customerPhone;
   final List<OrderItem> items;
   final double totalPrice;
+
+  /// Loyalty-store items, priced in points — charged when the order is confirmed.
+  final int pointsTotal;
   final double deliveryFee;
   final PaymentMethod? paymentMethod;
   final String address;
@@ -33,6 +36,7 @@ class Order extends Equatable {
     required this.customerPhone,
     required this.items,
     required this.totalPrice,
+    this.pointsTotal = 0,
     this.deliveryFee = 0,
      this.paymentMethod,
      this.statusNote,
@@ -49,6 +53,7 @@ class Order extends Equatable {
       customerPhone: customerPhone,
       items: items,
       totalPrice: totalPrice,
+      pointsTotal: pointsTotal,
       deliveryFee: deliveryFee,
       paymentMethod: paymentMethod,
       address: address,
@@ -65,6 +70,7 @@ class Order extends Equatable {
     customerPhone,
     items,
     totalPrice,
+    pointsTotal,
     deliveryFee,
     paymentMethod,
     address,
