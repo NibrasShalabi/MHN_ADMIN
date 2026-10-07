@@ -4,6 +4,9 @@ import 'package:equatable/equatable.dart';
 
 import '../../../presets/domain/entities/presets.dart';
 
+/// Points-priced products are what the client's loyalty store lists.
+enum ProductPricing { money, points }
+
 class Product extends Equatable {
   final String id;
   final String name;
@@ -11,6 +14,9 @@ class Product extends Equatable {
 
   /// One of the selected category's filters (its sub-section), if any.
   final String? filterId;
+
+  /// Follows the category: loyalty-scoped categories sell for points.
+  final ProductPricing pricing;
 
   final double price;
 
@@ -42,6 +48,7 @@ class Product extends Equatable {
     required this.name,
     this.category,
     this.filterId,
+    this.pricing = ProductPricing.money,
     required this.price,
     this.shippingPrice,
     this.supplierId,
@@ -64,6 +71,7 @@ class Product extends Equatable {
     String? name,
     String? category,
     String? filterId,
+    ProductPricing? pricing,
     double? price,
     double? shippingPrice,
     String? supplierId,
@@ -86,6 +94,7 @@ class Product extends Equatable {
       name: name ?? this.name,
       category: category ?? this.category,
       filterId: filterId ?? this.filterId,
+      pricing: pricing ?? this.pricing,
       price: price ?? this.price,
       shippingPrice: shippingPrice ?? this.shippingPrice,
       supplierId: supplierId ?? this.supplierId,
@@ -111,6 +120,7 @@ class Product extends Equatable {
     name,
     category,
     filterId,
+    pricing,
     price,
     shippingPrice,
     supplierId,

@@ -14,11 +14,10 @@ import '../../domain/entities/product.dart';
 import '../cubits/products_cubit.dart';
 import '../cubits/products_state.dart';
 import 'product_form_page.dart';
-enum ProductsPricingMode { currency, points }
 class ProductsPage extends StatelessWidget {
-  final ProductsPricingMode pricingMode;
+  final ProductPricing pricingMode;
 
-  const ProductsPage({super.key, this.pricingMode = ProductsPricingMode.currency});
+  const ProductsPage({super.key, this.pricingMode = ProductPricing.money});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +30,7 @@ class ProductsPage extends StatelessWidget {
 }
 
 class _ProductsView extends StatefulWidget {
-  final ProductsPricingMode pricingMode;
+  final ProductPricing pricingMode;
 
   const _ProductsView({required this.pricingMode});
 
@@ -101,10 +100,10 @@ class _ProductsViewState extends State<_ProductsView> {
               );
             }
 
-            final products = _query.isEmpty
-                ? state.products
-                : state.products
-                .where((p) => p.name.contains(_query))
+            // The store tab and the loyalty gifts tab each list their own products.
+            final products = state.products
+                .where((p) => p.pricing == widget.pricingMode)
+                .where((p) => _query.isEmpty || p.name.contains(_query))
                 .toList();
             final cubit = context.read<ProductsCubit>();
 
@@ -129,7 +128,7 @@ class _ProductsViewState extends State<_ProductsView> {
                         width: 32, height: 32, fit: BoxFit.cover),
                   ),
                   Text(product.name, style: AdminTextStyles.caption),
-                  widget.pricingMode == ProductsPricingMode.points
+                  widget.pricingMode == ProductPricing.points
                       ? Text('${product.price.toStringAsFixed(0)} ${AdminStrings.pointsWord}', style: AdminTextStyles.caption)
                       : Row(
                     mainAxisSize: MainAxisSize.min,

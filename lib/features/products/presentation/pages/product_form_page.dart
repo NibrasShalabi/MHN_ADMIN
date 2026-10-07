@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:mhn_admin/features/products/presentation/pages/products_page.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
@@ -26,12 +25,13 @@ import '../cubits/products_cubit.dart';
 
 class ProductFormPage extends StatefulWidget {
   final Product? product;
-  final ProductsPricingMode pricingMode;
+  /// Opened from the loyalty gifts tab → always points.
+  final ProductPricing pricingMode;
 
   const ProductFormPage({
     super.key,
     this.product,
-    this.pricingMode = ProductsPricingMode.currency,
+    this.pricingMode = ProductPricing.money,
   });
 
   @override
@@ -173,18 +173,29 @@ class _ProductFormPageState extends State<ProductFormPage> {
     await launchUrl(uri, webOnlyWindowName: '_blank');
   }
 
-  void _save() {
+  /// Re-derived on every save, so re-saving an older loyalty product fixes it.
+  Future<ProductPricing> _pricingForCategory() async {
+    if (widget.pricingMode == ProductPricing.points) return ProductPricing.points;
+    final categories = await _categoriesFuture;
+    final scope = categories.where((c) => c.id == _categoryId).firstOrNull?.scope;
+    return scope == CategoryScope.loyalty ? ProductPricing.points : ProductPricing.money;
+  }
+
+  Future<void> _save() async {
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
     final costPrice = double.tryParse(_costPriceController.text.trim());
     final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
     final discountPercentage = double.tryParse(_discountController.text.trim());
+    final pricing = await _pricingForCategory();
+    if (!mounted) return;
 
     final product = Product(
       id: widget.product?.id ?? 'P-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       category: _categoryId,
       filterId: _filterId,
+      pricing: pricing,
       price: price,
       shippingPrice: shippingPrice,
       stock: stock,

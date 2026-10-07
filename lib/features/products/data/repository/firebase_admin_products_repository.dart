@@ -129,6 +129,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       name: d['name'] as String? ?? '',
       category: d['categoryId'] as String?,
       filterId: d['filterId'] as String?,
+      pricing: d['pricing'] == 'points' ? ProductPricing.points : ProductPricing.money,
       price: (d['price'] as num? ?? 0).toDouble(),
       shippingPrice: (d['shippingPrice'] as num?)?.toDouble(),
       supplierId: d['supplierId'] as String?,
@@ -180,7 +181,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
         'measurements': r.measurements,
       }).toList() ?? [],
       'discountPercentage': product.discountPercentage,
-      'pricing': product.category == 'loyalty' ? 'points' : 'money',
+      'pricing': product.pricing.name,
     };
   }
 }

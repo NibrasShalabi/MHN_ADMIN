@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/widgets/admin_chips.dart';
+import '../../../products/domain/entities/product.dart';
 import '../../../products/presentation/pages/products_page.dart';
 import 'loyalty_ledger_page.dart';
 import 'loyalty_leaderboard_page.dart';
@@ -43,7 +44,7 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
         ),
         const SizedBox(height: AdminConstants.spacingLg),
         switch (_tab) {
-          LoyaltyTab.gifts => const ProductsPage(pricingMode: ProductsPricingMode.points),
+          LoyaltyTab.gifts => const ProductsPage(pricingMode: ProductPricing.points),
           LoyaltyTab.rules => const LoyaltyRulesPage(),
           LoyaltyTab.ledger => const LoyaltyLedgerPage(),
           LoyaltyTab.leaderboard => const LoyaltyLeaderboardPage(),
