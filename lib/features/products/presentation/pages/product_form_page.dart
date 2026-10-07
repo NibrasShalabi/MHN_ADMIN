@@ -70,6 +70,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   bool get _isEditing => widget.product != null;
 
+  /// Opened from Loyalty → Gifts: priced in points, no category or discount.
+  bool get _isGift => widget.pricingMode == ProductPricing.points;
+
   @override
   void initState() {
     super.initState();
@@ -175,7 +178,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   /// Re-derived on every save, so re-saving an older loyalty product fixes it.
   Future<ProductPricing> _pricingForCategory() async {
-    if (widget.pricingMode == ProductPricing.points) return ProductPricing.points;
+    if (_isGift) return ProductPricing.points;
     final categories = await _categoriesFuture;
     final scope = categories.where((c) => c.id == _categoryId).firstOrNull?.scope;
     return scope == CategoryScope.loyalty ? ProductPricing.points : ProductPricing.money;
@@ -186,15 +189,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
     final costPrice = double.tryParse(_costPriceController.text.trim());
     final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
-    final discountPercentage = double.tryParse(_discountController.text.trim());
+    final discountPercentage = _isGift ? null : double.tryParse(_discountController.text.trim());
     final pricing = await _pricingForCategory();
     if (!mounted) return;
 
     final product = Product(
       id: widget.product?.id ?? 'P-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
-      category: _categoryId,
-      filterId: _filterId,
+      category: _isGift ? null : _categoryId,
+      filterId: _isGift ? null : _filterId,
       pricing: pricing,
       price: price,
       shippingPrice: shippingPrice,
@@ -309,7 +312,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         isRequired: true,
                         child: AdminTextInput(controller: _nameController),
                       ),
-                      // قائمة منسدلة للأقسام
+                      // Loyalty gifts have no category — they're listed by pricing.
+                      if (!_isGift)
                       AdminField(
                         label: AdminStrings.productCategory,
                         child: FutureBuilder<List<Category>>(
@@ -395,7 +399,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         children: [
                           Expanded(
                             child: AdminField(
-                              label: AdminStrings.productPrice,
+                              label: _isGift ? AdminStrings.productPricePoints : AdminStrings.productPrice,
                               isRequired: true,
                               child: AdminTextInput(
                                 controller: _priceController,
@@ -524,7 +528,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
 
-                // ===== الخصم =====
+                // ===== الخصم (منتجات المتجر فقط) =====
+                if (!_isGift) ...[
                 AdminCard(
                   title: AdminStrings.productDiscount,
                   child: Column(
@@ -552,6 +557,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   ),
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
+                ],
                 AdminButton(label: AdminStrings.save, onPressed: _privateLoaded ? _save : null),
                 const SizedBox(height: AdminConstants.spacingLg),
               ],

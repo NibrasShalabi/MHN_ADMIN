@@ -49,6 +49,7 @@ class AdminStrings {
   static const String selectFilter = 'اختر فلتراً (اختياري)';
   static const String productSourceUrl = 'رابط المنتج (لا يظهر للعميل)';
   static const String productPrice = 'السعر';
+  static const String productPricePoints = 'السعر (بالنقاط)';
   static const String productCostPrice = 'سعر التكلفة (لا يظهر للعميل)';
   static const String productShippingPrice = 'سعر الشحن (اختياري)';
   static const String productStock = 'المخزون';
