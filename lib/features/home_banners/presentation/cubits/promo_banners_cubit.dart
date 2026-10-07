@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/promo_banners_repository.dart';
 import '../../domain/entities/promo_banner.dart';
 import 'promo_banners_state.dart';
 
-class PromoBannersCubit extends Cubit<PromoBannersState> {
+class PromoBannersCubit extends SafeCubit<PromoBannersState> {
   final PromoBannersRepository _repository;
 
   PromoBannersCubit(this._repository) : super(const PromoBannersState());

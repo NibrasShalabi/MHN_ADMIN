@@ -4,65 +4,79 @@ import '../../domain/entities/support_message.dart';
 import 'support_repository.dart';
 
 class FirebaseAdminSupportRepository implements SupportRepository {
+  static const int _pageSize = 50;
+  static const int _whereInLimit = 30;
+
   final FirebaseFirestore _db;
 
   FirebaseAdminSupportRepository(this._db);
 
   @override
-  @override
   Future<List<SupportMessage>> getMessages() async {
     final snap = await _db
         .collection('support_messages')
         .orderBy('sentAt', descending: true)
+        .limit(_pageSize)
         .get();
 
-    return Future.wait(snap.docs.map((doc) async {
-      final d = doc.data();
-      final userId = d['userId'] as String? ?? '';
+    final messages = snap.docs.map(_fromDoc).toList();
+    final names = await _namesFor(messages.where((m) => m.sentBy.isEmpty).map((m) => m.userId).toSet());
 
-      String userName = userId;
-      try {
-        final userDoc = await _db.collection('users').doc(userId).get();
-        final fullName = userDoc.data()?['fullName'] as String?;
-        final familyName = userDoc.data()?['familyName'] as String?;
-        if (fullName != null) {
-          userName = '$fullName ${familyName ?? ''}'.trim();
-        }
-      } catch (_) {}
-
-      return SupportMessage(
-        id: doc.id,
-        sentBy: userName,
-        topic: _mapTopic(d['topic'] as String?),
-        body: d['body'] as String? ?? '',
-        status: (d['status'] as String?) == 'resolved'
-            ? SupportStatus.resolved
-            : SupportStatus.open,
-        createdAt: (d['sentAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        reply: d['reply'] as String?,
-      );
-    }));
+    return [
+      for (final m in messages) m.sentBy.isEmpty ? m.copyWith(sentBy: names[m.userId] ?? m.userId) : m,
+    ];
   }
 
   @override
-  Future<void> markResolved(String id, {String? reply}) async {
-    await _db.collection('support_messages').doc(id).update({
-      'isRead': true,
-      'status': 'resolved',
-      if (reply != null) 'reply': reply,
-    });
+  Future<void> resolve(SupportMessage message, {String? reply}) async {
+    final batch = _db.batch()
+      ..update(_db.collection('support_messages').doc(message.id), {
+        'isRead': true,
+        'status': 'resolved',
+        if (reply != null) 'reply': reply,
+      });
+
+    if (reply != null) {
+      batch.set(_db.collection('admin_messages').doc(), {
+        'type': 'support_reply',
+        'userId': message.userId,
+        'supportMessageId': message.id,
+        'body': reply,
+        'isRead': false,
+        'sentAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
   }
 
-  SupportMessage _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data()!;
+  /// Fallback for tickets sent before userName was stored — one read per
+  /// 30 users instead of one per ticket.
+  Future<Map<String, String>> _namesFor(Set<String> userIds) async {
+    final ids = userIds.where((id) => id.isNotEmpty).toList();
+    final names = <String, String>{};
+
+    for (var i = 0; i < ids.length; i += _whereInLimit) {
+      final chunk = ids.sublist(i, (i + _whereInLimit).clamp(0, ids.length));
+      final snap = await _db.collection('users').where(FieldPath.documentId, whereIn: chunk).get();
+      for (final doc in snap.docs) {
+        final d = doc.data();
+        final name = '${d['fullName'] ?? ''} ${d['familyName'] ?? ''}'.trim();
+        if (name.isNotEmpty) names[doc.id] = name;
+      }
+    }
+    return names;
+  }
+
+  SupportMessage _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final d = doc.data();
     return SupportMessage(
       id: doc.id,
-      sentBy: d['userId'] as String? ?? '',
+      userId: d['userId'] as String? ?? '',
+      sentBy: d['userName'] as String? ?? '',
       topic: _mapTopic(d['topic'] as String?),
       body: d['body'] as String? ?? '',
-      status: (d['status'] as String?) == 'resolved'
-          ? SupportStatus.resolved
-          : SupportStatus.open,
+      status: d['status'] == 'resolved' ? SupportStatus.resolved : SupportStatus.open,
       createdAt: (d['sentAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       reply: d['reply'] as String?,
     );

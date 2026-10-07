@@ -1,9 +1,9 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/loyalty_repository.dart';
 import 'loyalty_ledger_state.dart';
 
-class LoyaltyLedgerCubit extends Cubit<LoyaltyLedgerState> {
+class LoyaltyLedgerCubit extends SafeCubit<LoyaltyLedgerState> {
   final LoyaltyRepository _repository;
 
   LoyaltyLedgerCubit(this._repository) : super(const LoyaltyLedgerState());

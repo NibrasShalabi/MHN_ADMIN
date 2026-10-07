@@ -1,4 +1,4 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../../analytics/data/repository/analytics_repository.dart';
 import '../../../fitness/data/repository/fitness_repository.dart';
@@ -12,7 +12,7 @@ import '../../../support/domain/entities/support_message.dart';
 import '../../domain/entities/dashboard_summary.dart';
 import 'dashboard_state.dart';
 
-class DashboardCubit extends Cubit<DashboardState> {
+class DashboardCubit extends SafeCubit<DashboardState> {
   final OrdersRepository _ordersRepository;
   final SuggestionsRepository _suggestionsRepository;
   final SupportRepository _supportRepository;

@@ -32,7 +32,7 @@ class _SupportDetailsPanelState extends State<SupportDetailsPanel> {
 
   void _resolve() {
     final reply = _replyController.text.trim();
-    widget.cubit.markResolved(widget.message.id, reply: reply.isEmpty ? null : reply);
+    widget.cubit.resolve(widget.message, reply: reply.isEmpty ? null : reply);
     Navigator.of(context).pop();
   }
 

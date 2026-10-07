@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/fitness_repository.dart';
 import '../../domain/entities/health_program.dart';
 import 'programs_state.dart';
 
-class ProgramsCubit extends Cubit<ProgramsState> {
+class ProgramsCubit extends SafeCubit<ProgramsState> {
   final FitnessRepository _repository;
 
   ProgramsCubit(this._repository) : super(const ProgramsState());

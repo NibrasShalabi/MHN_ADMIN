@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/analytics_repository.dart';
 import '../../domain/entities/analytics_data.dart';
 import 'analytics_state.dart';
 
-class AnalyticsCubit extends Cubit<AnalyticsState> {
+class AnalyticsCubit extends SafeCubit<AnalyticsState> {
   final AnalyticsRepository _repository;
 
   AnalyticsCubit(this._repository) : super(const AnalyticsState());
@@ -33,7 +33,7 @@ class AnalyticsCubit extends Cubit<AnalyticsState> {
     return all.length <= days ? all : all.sublist(all.length - days);
   }
 
-  /// The window immediately before [filteredDaily], same length — the
+  /// The window immediately before [filteredDaily], same length â€” the
   /// baseline the up/down arrows on the stat cards compare against.
   /// Empty when there isn't enough history yet (e.g. the 30-day period
   /// against a 30-day fake dataset), and the UI hides the arrow then

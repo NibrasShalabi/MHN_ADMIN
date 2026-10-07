@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/loyalty_repository.dart';
 import '../../domain/entities/loyalty_rules.dart';
 import 'loyalty_rules_state.dart';
 
-class LoyaltyRulesCubit extends Cubit<LoyaltyRulesState> {
+class LoyaltyRulesCubit extends SafeCubit<LoyaltyRulesState> {
   final LoyaltyRepository _repository;
 
   LoyaltyRulesCubit(this._repository) : super(const LoyaltyRulesState());

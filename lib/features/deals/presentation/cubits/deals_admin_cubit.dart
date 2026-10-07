@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repositories/deals_admin_repository.dart';
 import '../../domain/entities/deal_promotion.dart';
 import 'deals_admin_state.dart';
 
-class DealsAdminCubit extends Cubit<DealsAdminState> {
+class DealsAdminCubit extends SafeCubit<DealsAdminState> {
   final DealsAdminRepository _repository;
   Timer? _refreshTimer;
 
@@ -15,8 +15,8 @@ class DealsAdminCubit extends Cubit<DealsAdminState> {
     try {
       final promotions = await _repository.getPromotions();
 
-      // ثغرة 1: فلتر المنتجات المحذوفة — لما Firebase يجي بنتحقق من وجود المنتج
-      // بالـ Fake phase: نعتمد على isActive فقط
+      // ط«ط؛ط±ط© 1: ظپظ„طھط± ط§ظ„ظ…ظ†طھط¬ط§طھ ط§ظ„ظ…ط­ط°ظˆظپط© â€” ظ„ظ…ط§ Firebase ظٹط¬ظٹ ط¨ظ†طھط­ظ‚ظ‚ ظ…ظ† ظˆط¬ظˆط¯ ط§ظ„ظ…ظ†طھط¬
+      // ط¨ط§ظ„ظ€ Fake phase: ظ†ط¹طھظ…ط¯ ط¹ظ„ظ‰ isActive ظپظ‚ط·
       emit(state.copyWith(status: DealsAdminStatus.success, promotions: promotions));
 
       _startRefreshTimer();
@@ -25,12 +25,12 @@ class DealsAdminCubit extends Cubit<DealsAdminState> {
     }
   }
 
-  // ثغرة 2: refresh تلقائي كل دقيقة لتحديث الـ countdown
+  // ط«ط؛ط±ط© 2: refresh طھظ„ظ‚ط§ط¦ظٹ ظƒظ„ ط¯ظ‚ظٹظ‚ط© ظ„طھط­ط¯ظٹط« ط§ظ„ظ€ countdown
   void _startRefreshTimer() {
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (state.status == DealsAdminStatus.success) {
-        // نحدث الـ state بدون loading لتجنب الـ flicker
+        // ظ†ط­ط¯ط« ط§ظ„ظ€ state ط¨ط¯ظˆظ† loading ظ„طھط¬ظ†ط¨ ط§ظ„ظ€ flicker
         _refreshPromotions();
       }
     });
@@ -43,7 +43,7 @@ class DealsAdminCubit extends Cubit<DealsAdminState> {
     } catch (_) {}
   }
 
-  // ثغرة 3: تحقق من وجود عرض نشط قبل الإضافة
+  // ط«ط؛ط±ط© 3: طھط­ظ‚ظ‚ ظ…ظ† ظˆط¬ظˆط¯ ط¹ط±ط¶ ظ†ط´ط· ظ‚ط¨ظ„ ط§ظ„ط¥ط¶ط§ظپط©
   Future<DealsAdminResult> addPromotion({
     required String productId,
     required String productName,
@@ -51,7 +51,7 @@ class DealsAdminCubit extends Cubit<DealsAdminState> {
     required double discountPercentage,
     required int durationHours,
   }) async {
-    // تحقق من عرض نشط على نفس المنتج
+    // طھط­ظ‚ظ‚ ظ…ظ† ط¹ط±ط¶ ظ†ط´ط· ط¹ظ„ظ‰ ظ†ظپط³ ط§ظ„ظ…ظ†طھط¬
     final hasActive = state.active.any((p) => p.productId == productId);
     if (hasActive) return DealsAdminResult.duplicatePromotion;
 

@@ -1,9 +1,9 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/suggestions_repository.dart';
 import 'suggestions_state.dart';
 
-class SuggestionsCubit extends Cubit<SuggestionsState> {
+class SuggestionsCubit extends SafeCubit<SuggestionsState> {
   final SuggestionsRepository _repository;
 
   SuggestionsCubit(this._repository) : super(const SuggestionsState());

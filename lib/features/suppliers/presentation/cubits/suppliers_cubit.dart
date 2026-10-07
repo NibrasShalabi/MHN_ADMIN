@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/suppliers_repository.dart';
 import '../../domain/entities/supplier.dart';
 import 'suppliers_state.dart';
 
-class SuppliersCubit extends Cubit<SuppliersState> {
+class SuppliersCubit extends SafeCubit<SuppliersState> {
   final SuppliersRepository _repository;
 
   SuppliersCubit(this._repository) : super(const SuppliersState());

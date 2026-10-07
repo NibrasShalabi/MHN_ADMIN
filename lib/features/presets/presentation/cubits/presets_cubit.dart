@@ -1,11 +1,11 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../../products/data/repository/products_repository.dart';
 import '../../data/repository/presets_repository.dart';
 import '../../domain/entities/presets.dart';
 import 'presets_state.dart';
 
-class PresetsCubit extends Cubit<PresetsState> {
+class PresetsCubit extends SafeCubit<PresetsState> {
   final PresetsRepository _repository;
   final ProductsRepository _productsRepository;
 

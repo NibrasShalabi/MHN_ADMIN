@@ -1,11 +1,11 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/orders_repository.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_batch.dart';
 import 'orders_state.dart';
 
-class OrdersCubit extends Cubit<OrdersState> {
+class OrdersCubit extends SafeCubit<OrdersState> {
   final OrdersRepository _repository;
 
   OrdersCubit(this._repository) : super(const OrdersState());
@@ -42,7 +42,7 @@ class OrdersCubit extends Cubit<OrdersState> {
   }
 
   /// The same status-change call [updateStatus] makes, once per order in
-  /// the batch — a batch's "unified message" is that shared note, sent to
+  /// the batch â€” a batch's "unified message" is that shared note, sent to
   /// every order (and so every customer) it contains, in one action.
   Future<void> applyBulkStatus(
       OrderBatch batch,

@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/categories_repository.dart';
 import '../../domain/entities/category.dart';
 import 'categories_state.dart';
 
-class CategoriesCubit extends Cubit<CategoriesState> {
+class CategoriesCubit extends SafeCubit<CategoriesState> {
   final CategoriesRepository _repository;
 
   CategoriesCubit(this._repository) : super(const CategoriesState());
