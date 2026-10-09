@@ -74,8 +74,8 @@ class _ShippingFormState extends State<_ShippingForm> {
   Widget build(BuildContext context) {
     final saving = context.select((ShippingCubit c) => c.state.status == ShippingStatus.saving);
 
-    return SingleChildScrollView(
-      child: Column(
+    // The section body already scrolls — a second scroll view here broke the layout.
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AdminCard(
@@ -124,7 +124,6 @@ class _ShippingFormState extends State<_ShippingForm> {
             onPressed: saving ? null : () => context.read<ShippingCubit>().save(_rates),
           ),
         ],
-      ),
     );
   }
 }
