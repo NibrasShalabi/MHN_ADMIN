@@ -250,6 +250,15 @@ class AdminStrings {
 
   //==========================
   static const String customerPhone = 'رقم الزبون';
+  static const String customerSecondaryPhone = 'رقم إضافي';
+  static const String gender = 'الجنس';
+  static const String male = 'ذكر';
+  static const String female = 'أنثى';
+  static const String governorate = 'المحافظة';
+  static const String area = 'المنطقة';
+  static const String txid = 'رقم المعاملة (TXID)';
+  static const String paymentReceipt = 'إيصال الدفع';
+  static const String paymentShamCash = 'شام كاش';
   static const String address = 'العنوان';
   static const String payment = 'الدفع';
   static const String paymentCash = 'عند الاستلام';

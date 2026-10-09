@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
@@ -71,37 +72,30 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
         ),
         const SizedBox(height: AdminConstants.spacingLg),
         _InfoRow(label: AdminStrings.customer, value: order.customerName),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingXs),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(AdminStrings.customerPhone,
-                  style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(order.customerPhone, style: AdminTextStyles.caption),
-                  const SizedBox(width: AdminConstants.spacingSm),
-                  InkWell(
-                    onTap: () => Clipboard.setData(ClipboardData(text: order.customerPhone)),
-                    child: const Icon(Icons.copy, size: 14, color: AdminColors.gold),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        _CopyRow(label: AdminStrings.customerPhone, value: order.customerPhone),
+        if (order.customerSecondaryPhone case final phone?)
+          _CopyRow(label: AdminStrings.customerSecondaryPhone, value: phone),
+        if (order.gender case final gender?)
+          _InfoRow(label: AdminStrings.gender, value: gender == 'female' ? AdminStrings.female : AdminStrings.male),
         _InfoRow(label: AdminStrings.orderDate, value: dateFormat.format(order.orderDate)),
         _InfoRow(
           label: AdminStrings.payment,
           value: switch (order.paymentMethod) {
             PaymentMethod.cashOnDelivery => AdminStrings.paymentCash,
             PaymentMethod.bankTransfer => AdminStrings.paymentBank,
+            PaymentMethod.usdtTrc20 => 'USDT · TRC20',
+            PaymentMethod.usdtBep20 => 'USDT · BEP20',
+            PaymentMethod.usdtErc20 => 'USDT · ERC20',
+            PaymentMethod.shamCash => AdminStrings.paymentShamCash,
             null => AdminStrings.paymentNotSet,
           },
         ),
-        _InfoRow(label: AdminStrings.address, value: order.address),
+        if (order.txid case final txid?) _CopyRow(label: AdminStrings.txid, value: txid),
+        if (order.receiptUrl case final url?)
+          _LinkRow(label: AdminStrings.paymentReceipt, url: url),
+        if (order.governorate case final g?) _InfoRow(label: AdminStrings.governorate, value: g),
+        if (order.area case final a?) _InfoRow(label: AdminStrings.area, value: a),
+        if (order.address.isNotEmpty) _InfoRow(label: AdminStrings.address, value: order.address),
         if (order.statusNote != null && order.statusNote!.isNotEmpty)
           _InfoRow(label: AdminStrings.statusNote, value: order.statusNote!),
         const SizedBox(height: AdminConstants.spacingLg),
@@ -217,6 +211,68 @@ class _InfoRow extends StatelessWidget {
         children: [
           Text(label, style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
           Text(value, style: AdminTextStyles.caption),
+        ],
+      ),
+    );
+  }
+}
+
+/// Label + value with a copy button — phones, transaction ids.
+class _CopyRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CopyRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingXs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
+          const SizedBox(width: AdminConstants.spacingMd),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: SelectableText(value, style: AdminTextStyles.caption)),
+                const SizedBox(width: AdminConstants.spacingSm),
+                InkWell(
+                  onTap: () => Clipboard.setData(ClipboardData(text: value)),
+                  child: const Icon(Icons.copy, size: 14, color: AdminColors.gold),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  final String label;
+  final String url;
+
+  const _LinkRow({required this.label, required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingXs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
+          InkWell(
+            onTap: () => launchUrl(Uri.parse(url), webOnlyWindowName: '_blank'),
+            child: Text(
+              AdminStrings.openLink,
+              style: AdminTextStyles.caption.copyWith(color: AdminColors.gold, decoration: TextDecoration.underline),
+            ),
+          ),
         ],
       ),
     );

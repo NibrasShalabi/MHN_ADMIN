@@ -23,7 +23,29 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         .collection('orders')
         .orderBy('createdAt', descending: true)
         .get();
-    return snap.docs.map(_orderFromDoc).toList();
+    final orders = snap.docs.map(_orderFromDoc).toList();
+
+    // Older orders don't carry the customer snapshot — fetch those users
+    // in batches of 30 (one read per 30 customers, not per order).
+    final missing = {
+      for (final d in snap.docs)
+        if (d.data()['customerName'] == null) d.data()['userId'] as String?,
+    }.whereType<String>().toList();
+    if (missing.isEmpty) return orders;
+
+    final users = <String, Map<String, dynamic>>{};
+    for (var i = 0; i < missing.length; i += 30) {
+      final chunk = missing.sublist(i, (i + 30).clamp(0, missing.length));
+      final page = await _db.collection('users').where(FieldPath.documentId, whereIn: chunk).get();
+      for (final u in page.docs) {
+        users[u.id] = u.data();
+      }
+    }
+    final userIdOf = {for (final d in snap.docs) d.id: d.data()['userId'] as String?};
+    return [
+      for (final o in orders)
+        if (users[userIdOf[o.id]] case final user?) o.withCustomer(user) else o,
+    ];
   }
 
   /// Status change in one transaction, with the loyalty side-effects:
@@ -46,11 +68,17 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       final userId = order['userId'] as String?;
       final userRef = userId == null ? null : _db.collection('users').doc(userId);
       final deducted = (order['pointsDeducted'] as num?)?.toInt() ?? 0;
+      final awarded = (order['pointsAwarded'] as num?)?.toInt() ?? 0;
 
       final charging = status == OrderStatus.confirmed && deducted == 0 && userRef != null;
       final refunding = status == OrderStatus.cancelled && deducted > 0 && order['pointsRefunded'] != true;
 
       final cost = charging ? await _pointsCost(tx, order['items'] as List? ?? const []) : 0;
+
+      // Purchase reward: once, when delivered; taken back if cancelled afterwards.
+      final awarding = status == OrderStatus.delivered && awarded == 0 && userRef != null;
+      final revoking = status == OrderStatus.cancelled && awarded > 0 && order['pointsAwardRevoked'] != true;
+      final reward = awarding ? await _purchaseReward(tx, (order['total'] as num? ?? 0).toDouble()) : 0;
       if (cost > 0) {
         final balance = ((await tx.get(userRef!)).data()?['loyaltyPoints'] as num?)?.toInt() ?? 0;
         if (balance < cost) throw InsufficientPointsException(required: cost, balance: balance);
@@ -62,10 +90,15 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         'statusNote': note,
         if (cost > 0) 'pointsDeducted': cost,
         if (refunding) 'pointsRefunded': true,
+        if (reward > 0) 'pointsAwarded': reward,
+        if (revoking) 'pointsAwardRevoked': true,
       });
 
       if (cost > 0) _movePoints(tx, userRef!, userId!, -cost, id: 'order_$orderId', orderId: orderId, reason: 'شراء من متجر الولاء');
       if (refunding) _movePoints(tx, userRef!, userId!, deducted, id: 'refund_$orderId', orderId: orderId, reason: 'استرجاع نقاط طلب ملغى');
+
+      if (reward > 0) _movePoints(tx, userRef!, userId!, reward, id: 'reward_$orderId', orderId: orderId, reason: 'نقاط عملية شراء');
+      if (revoking) _movePoints(tx, userRef!, userId!, -awarded, id: 'reward_revoke_$orderId', orderId: orderId, reason: 'إلغاء نقاط طلب ملغى');
 
       if (notifyCustomer && note != null && userId != null) {
         tx.set(_db.collection('admin_messages').doc(), {
@@ -90,6 +123,16 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       total += ((product!['price'] as num? ?? 0) * (item['quantity'] as num? ?? 1)).round();
     }
     return total;
+  }
+
+  /// Admin's purchase rule from config/loyaltyRules: a fixed amount per
+  /// order, or a percentage of the money total. Points items don't count.
+  Future<int> _purchaseReward(Transaction tx, double moneyTotal) async {
+    final rules = (await tx.get(_db.collection('config').doc('loyaltyRules'))).data() ?? const {};
+    if (rules['purchaseRuleEnabled'] == false || moneyTotal <= 0) return 0;
+    final value = (rules['purchaseValue'] as num? ?? 0).toDouble();
+    final points = rules['purchaseIsPercentage'] == true ? moneyTotal * value / 100 : value;
+    return points.round();
   }
 
   /// Fixed transaction id per order — a retry can never charge or refund twice.
@@ -138,6 +181,12 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       id: doc.id,
       customerName: d['customerName'] as String? ?? 'غير محدد',
       customerPhone: d['customerPhone'] as String? ?? '',
+      customerSecondaryPhone: d['customerSecondaryPhone'] as String?,
+      governorate: d['governorate'] as String?,
+      area: d['area'] as String?,
+      gender: d['gender'] as String?,
+      txid: d['txid'] as String?,
+      receiptUrl: d['receiptUrl'] as String?,
       address: d['address'] as String? ?? '',
       totalPrice: (d['total'] as num? ?? 0).toDouble(),
       pointsTotal: (d['pointsTotal'] as num?)?.toInt() ?? 0,
@@ -171,8 +220,12 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
   PaymentMethod? _mapPaymentMethod(String? value) {
     if (value == null) return null;
     return switch (value) {
-      'cashOnDelivery' => PaymentMethod.cashOnDelivery,
+      'cashOnDelivery' || 'cod' => PaymentMethod.cashOnDelivery,
       'bankTransfer' => PaymentMethod.bankTransfer,
+      'trc20' => PaymentMethod.usdtTrc20,
+      'bep20' => PaymentMethod.usdtBep20,
+      'erc20' => PaymentMethod.usdtErc20,
+      'sham_cash' => PaymentMethod.shamCash,
       _ => null,
     };
   }
