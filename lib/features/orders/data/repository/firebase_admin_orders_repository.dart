@@ -226,6 +226,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       'bep20' => PaymentMethod.usdtBep20,
       'erc20' => PaymentMethod.usdtErc20,
       'sham_cash' => PaymentMethod.shamCash,
+      'points' => PaymentMethod.loyaltyPoints,
       _ => null,
     };
   }

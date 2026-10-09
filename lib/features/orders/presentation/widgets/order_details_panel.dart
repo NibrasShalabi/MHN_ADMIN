@@ -87,6 +87,7 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
             PaymentMethod.usdtBep20 => 'USDT · BEP20',
             PaymentMethod.usdtErc20 => 'USDT · ERC20',
             PaymentMethod.shamCash => AdminStrings.paymentShamCash,
+            PaymentMethod.loyaltyPoints => AdminStrings.paymentPoints,
             null => AdminStrings.paymentNotSet,
           },
         ),

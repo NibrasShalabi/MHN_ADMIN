@@ -259,6 +259,7 @@ class AdminStrings {
   static const String txid = 'رقم المعاملة (TXID)';
   static const String paymentReceipt = 'إيصال الدفع';
   static const String paymentShamCash = 'شام كاش';
+  static const String paymentPoints = 'نقاط الولاء';
   static const String address = 'العنوان';
   static const String payment = 'الدفع';
   static const String paymentCash = 'عند الاستلام';

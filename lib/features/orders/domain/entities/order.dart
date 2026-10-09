@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 enum OrderStatus { pending, confirmed, preparing, onTheWay, delivered, delayed, cancelled }
-enum PaymentMethod { cashOnDelivery, bankTransfer, usdtTrc20, usdtBep20, usdtErc20, shamCash }
+enum PaymentMethod { cashOnDelivery, bankTransfer, usdtTrc20, usdtBep20, usdtErc20, shamCash, loyaltyPoints }
 
 class OrderItem extends Equatable {
   final String productName;
