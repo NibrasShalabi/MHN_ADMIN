@@ -11,7 +11,7 @@ abstract class OrdersRepository {
         bool notifyCustomer = false,
       });
 
-  Future<void> updatePaymentStatus(String orderId, PaymentStatus status);
+  Future<void> updatePaymentStatus(Order order, PaymentStatus status, {String? reason});
 
   /// Recomputes what the order should cost from current prices and shipping.
   Future<OrderCheck> checkOrder(Order order);

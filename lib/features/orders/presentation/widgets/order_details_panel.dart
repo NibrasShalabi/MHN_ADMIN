@@ -8,6 +8,7 @@ import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
+import '../../../../core/widgets/admin_chips.dart';
 import '../../../../core/widgets/admin_status_chip.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_check.dart';
@@ -33,14 +34,28 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
   /// Re-computed once when the panel opens — a handful of reads, not per rebuild.
   late final Future<OrderCheck> _check = widget.cubit.checkOrder(widget.order);
 
-  void _setPayment(PaymentStatus status) {
-    setState(() => _paymentStatus = status);
-    widget.cubit.updatePaymentStatus(widget.order.id, status);
+  bool _choosingRejectReason = false;
+  String? _rejectPreset;
+  final _rejectNote = TextEditingController();
+
+  void _setPayment(PaymentStatus status, {String? reason}) {
+    setState(() {
+      _paymentStatus = status;
+      _choosingRejectReason = false;
+    });
+    widget.cubit.updatePaymentStatus(widget.order, status, reason: reason);
+  }
+
+  void _confirmReject() {
+    final note = _rejectNote.text.trim();
+    final reason = [?_rejectPreset, if (note.isNotEmpty) note].join(' — ');
+    _setPayment(PaymentStatus.rejected, reason: reason.isEmpty ? null : reason);
   }
 
   @override
   void dispose() {
     _noteController.dispose();
+    _rejectNote.dispose();
     super.dispose();
   }
 
@@ -177,11 +192,56 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
                 child: AdminButton(
                   label: AdminStrings.markPaymentRejected,
                   kind: AdminButtonKind.danger,
-                  onPressed: _paymentStatus == PaymentStatus.rejected ? null : () => _setPayment(PaymentStatus.rejected),
+                  onPressed: _paymentStatus == PaymentStatus.rejected
+                      ? null
+                      : () => setState(() => _choosingRejectReason = true),
                 ),
               ),
             ],
           ),
+          if (_choosingRejectReason) ...[
+            const SizedBox(height: AdminConstants.spacingMd),
+            Text(AdminStrings.rejectReason, style: AdminTextStyles.label),
+            const SizedBox(height: AdminConstants.spacingSm),
+            AdminOptionChips<String>(
+              options: AdminStrings.rejectReasonPresets,
+              selected: _rejectPreset,
+              labelOf: (r) => r,
+              onChanged: (r) => setState(() => _rejectPreset = r),
+            ),
+            const SizedBox(height: AdminConstants.spacingSm),
+            TextField(
+              controller: _rejectNote,
+              maxLines: 2,
+              style: AdminTextStyles.body,
+              decoration: const InputDecoration(hintText: AdminStrings.rejectReasonNote),
+            ),
+            const SizedBox(height: AdminConstants.spacingSm),
+            Row(
+              children: [
+                Expanded(
+                  child: AdminButton(
+                    label: AdminStrings.markPaymentRejected,
+                    kind: AdminButtonKind.danger,
+                    onPressed: _confirmReject,
+                  ),
+                ),
+                const SizedBox(width: AdminConstants.spacingSm),
+                Expanded(
+                  child: AdminButton(
+                    label: AdminStrings.cancel,
+                    kind: AdminButtonKind.secondary,
+                    onPressed: () => setState(() => _choosingRejectReason = false),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_paymentStatus == PaymentStatus.rejected && (order.paymentRejectReason?.isNotEmpty ?? false)) ...[
+            const SizedBox(height: AdminConstants.spacingSm),
+            Text('${AdminStrings.rejectReason}: ${order.paymentRejectReason}',
+                style: AdminTextStyles.caption.copyWith(color: AdminColors.danger)),
+          ],
           const SizedBox(height: AdminConstants.spacingLg),
           const Divider(color: AdminColors.border, height: 1),
           const SizedBox(height: AdminConstants.spacingLg),

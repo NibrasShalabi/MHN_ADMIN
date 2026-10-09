@@ -46,11 +46,11 @@ class OrdersCubit extends SafeCubit<OrdersState> {
     }
   }
 
-  Future<void> updatePaymentStatus(String orderId, PaymentStatus status) async {
+  Future<void> updatePaymentStatus(Order order, PaymentStatus status, {String? reason}) async {
     try {
-      await _repository.updatePaymentStatus(orderId, status);
+      await _repository.updatePaymentStatus(order, status, reason: reason);
       emit(state.copyWith(orders: [
-        for (final o in state.orders) o.id == orderId ? o.copyWith(paymentStatus: status) : o,
+        for (final o in state.orders) o.id == order.id ? o.copyWith(paymentStatus: status) : o,
       ]));
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString()));

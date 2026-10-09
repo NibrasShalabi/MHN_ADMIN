@@ -29,6 +29,7 @@ class OrderItem extends Equatable {
 
 class Order extends Equatable {
   final String id;
+  final String? userId;
   final String customerName;
   final String customerPhone;
   final String? customerSecondaryPhone;
@@ -53,6 +54,7 @@ class Order extends Equatable {
   final int pointsTotal;
   final PaymentMethod? paymentMethod;
   final PaymentStatus paymentStatus;
+  final String? paymentRejectReason;
   final String address;
   final DateTime orderDate;
   final OrderStatus status;
@@ -61,6 +63,7 @@ class Order extends Equatable {
 
   const Order({
     required this.id,
+    this.userId,
     required this.customerName,
     required this.customerPhone,
     this.customerSecondaryPhone,
@@ -77,6 +80,7 @@ class Order extends Equatable {
     this.pointsTotal = 0,
     this.paymentMethod,
     this.paymentStatus = PaymentStatus.pending,
+    this.paymentRejectReason,
     this.statusNote,
     required this.address,
     required this.orderDate,
@@ -122,6 +126,7 @@ class Order extends Equatable {
   }) =>
       Order(
         id: id,
+        userId: userId,
         customerName: customerName ?? this.customerName,
         customerPhone: customerPhone ?? this.customerPhone,
         customerSecondaryPhone: customerSecondaryPhone ?? this.customerSecondaryPhone,
@@ -138,6 +143,7 @@ class Order extends Equatable {
         pointsTotal: pointsTotal,
         paymentMethod: paymentMethod,
         paymentStatus: paymentStatus ?? this.paymentStatus,
+        paymentRejectReason: paymentRejectReason,
         address: address,
         orderDate: orderDate,
         status: status ?? this.status,
@@ -147,8 +153,8 @@ class Order extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, customerName, customerPhone, customerSecondaryPhone, governorate, area, gender, txid, receiptUrl,
-        items, totalPrice, itemsTotal, supplyShipping, deliveryFee, pointsTotal, paymentMethod, paymentStatus,
+        id, userId, customerName, customerPhone, customerSecondaryPhone, governorate, area, gender, txid, receiptUrl,
+        items, totalPrice, itemsTotal, supplyShipping, deliveryFee, pointsTotal, paymentMethod, paymentStatus, paymentRejectReason,
         address, orderDate, status, statusNote, notifyCustomer,
       ];
 }

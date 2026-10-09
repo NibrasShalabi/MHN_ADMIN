@@ -33,8 +33,8 @@ class FakeOrdersRepository implements OrdersRepository {
   final List<OrderBatch> _batches = [];
 
   @override
-  Future<void> updatePaymentStatus(String orderId, PaymentStatus status) async {
-    final i = _orders.indexWhere((o) => o.id == orderId);
+  Future<void> updatePaymentStatus(Order order, PaymentStatus status, {String? reason}) async {
+    final i = _orders.indexWhere((o) => o.id == order.id);
     if (i != -1) _orders[i] = _orders[i].copyWith(paymentStatus: status);
   }
 

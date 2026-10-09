@@ -91,10 +91,29 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         if (balance < cost) throw InsufficientPointsException(required: cost, balance: balance);
       }
 
+      // Stock was taken when the order was placed — give it back on cancel,
+      // take it again if the order is brought back. Once each way.
+      final stockOut = order['stockRestored'] != true;
+      final restoringStock = status == OrderStatus.cancelled && stockOut;
+      final retakingStock = status != OrderStatus.cancelled && !stockOut;
+
       // ===== Writes =====
+      if (restoringStock || retakingStock) {
+        for (final item in (order['items'] as List? ?? const []).cast<Map<String, dynamic>>()) {
+          final productId = item['productId'] as String?;
+          if (productId == null || productId.isEmpty) continue;
+          final qty = (item['quantity'] as num? ?? 0).toInt();
+          tx.update(_db.collection('products').doc(productId), {
+            'stock': FieldValue.increment(restoringStock ? qty : -qty),
+          });
+        }
+      }
+
       tx.update(orderRef, {
         'status': status.name,
         'statusNote': note,
+        if (restoringStock) 'stockRestored': true,
+        if (retakingStock) 'stockRestored': false,
         if (cost > 0) 'pointsDeducted': cost,
         if (refunding) 'pointsRefunded': true,
         if (reward > 0) 'pointsAwarded': reward,
@@ -156,8 +175,28 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
   }
 
   @override
-  Future<void> updatePaymentStatus(String orderId, PaymentStatus status) =>
-      _db.collection('orders').doc(orderId).update({'paymentStatus': status.name});
+  /// Rejecting tells the customer why, through their messages, and lets
+  /// them send a new TXID/receipt from the order card.
+  Future<void> updatePaymentStatus(Order order, PaymentStatus status, {String? reason}) async {
+    final rejected = status == PaymentStatus.rejected;
+    final batch = _db.batch()
+      ..update(_db.collection('orders').doc(order.id), {
+        'paymentStatus': status.name,
+        'paymentRejectReason': rejected ? reason : FieldValue.delete(),
+      });
+    if (rejected && order.userId != null) {
+      batch.set(_db.collection('admin_messages').doc(), {
+        'type': 'order_update',
+        'userId': order.userId,
+        'orderId': order.id,
+        'title': 'تم رفض الدفع — ${order.id}',
+        'body': reason == null || reason.isEmpty ? 'افتح الطلب وأعد إرسال الدفع.' : '$reason\nافتح الطلب وأعد إرسال الدفع.',
+        'isRead': false,
+        'sentAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
 
   /// Same formula as the client's checkout — keep both in step.
   @override
@@ -241,6 +280,8 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
     final d = doc.data()!;
     return Order(
       id: doc.id,
+      userId: d['userId'] as String?,
+      paymentRejectReason: d['paymentRejectReason'] as String?,
       customerName: d['customerName'] as String? ?? 'غير محدد',
       customerPhone: d['customerPhone'] as String? ?? '',
       customerSecondaryPhone: d['customerSecondaryPhone'] as String?,
