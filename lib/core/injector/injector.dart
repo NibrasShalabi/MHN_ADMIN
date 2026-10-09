@@ -1,3 +1,4 @@
+import '../../features/payments/data/repository/payment_settings_repository.dart';
 import '../../features/shipping/data/repository/shipping_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -64,6 +65,7 @@ void setupInjector() {
 
   // ===== Shipping =====
   getIt.registerLazySingleton(() => ShippingRepository(db));
+  getIt.registerLazySingleton(() => PaymentSettingsRepository(db));
 
   // ===== Orders =====
   getIt.registerLazySingleton<OrdersRepository>(

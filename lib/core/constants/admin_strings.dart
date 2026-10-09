@@ -263,6 +263,20 @@ class AdminStrings {
 
   // ===== Shipping =====
   static const String navShipping = 'الشحن';
+
+  // ===== Payment addresses =====
+  static const String navPayments = 'عناوين الدفع';
+  static const String paymentAddressesHint = 'هي العناوين اللي بيحوّل عليها العميل. طفّي أي طريقة لتختفي من صفحة الدفع.';
+  static const String invalidAddress = 'العنوان مو بالشكل الصحيح لهالشبكة';
+  static const String confirmAddresses = 'تأكيد العناوين الجديدة';
+  static const String confirmAddressesHint = 'راجع كل حرف — أي غلطة بتخلّي المصاري تروح لعنوان تاني.';
+  static const String addressRemoved = '(محذوف)';
+  static const String methodOn = 'مفعّلة';
+  static const String methodOff = 'موقّفة';
+  static const String walletHint = 'عنوان المحفظة';
+  static const String shamCashHint = 'رقم شام كاش';
+  static const String copy = 'نسخ';
+  static const String copied = 'تم النسخ';
   static const String deliveryFees = 'رسوم التوصيل حسب المحافظة';
   static const String deliveryFeesHint = 'من عندك لعند العميل — بتنضاف تلقائياً عالطلب حسب محافظته. اترك 0 للمجاني.';
   static const String freeDelivery = 'توصيل مجاني فوق مبلغ معيّن';
