@@ -424,7 +424,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         children: [
                           Expanded(
                             child: AdminField(
-                              label: AdminStrings.productShippingPrice,
+                              label: AdminStrings.supplyShippingLabel,
                               child: AdminTextInput(
                                 controller: _shippingPriceController,
                                 keyboardType: TextInputType.number,

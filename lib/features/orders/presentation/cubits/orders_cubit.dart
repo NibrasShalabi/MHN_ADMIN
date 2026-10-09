@@ -3,6 +3,8 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/orders_repository.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/insufficient_points_exception.dart';
+import '../../domain/entities/order_check.dart';
+import '../../domain/entities/payment_not_verified_exception.dart';
 import '../../domain/entities/order_batch.dart';
 import '../../../../core/constants/admin_strings.dart';
 import 'orders_state.dart';
@@ -35,12 +37,27 @@ class OrdersCubit extends SafeCubit<OrdersState> {
       emit(state.copyWith(orders: [
         for (final o in state.orders) o.id == orderId ? o.copyWith(status: status, statusNote: note) : o,
       ]));
+    } on PaymentNotVerifiedException {
+      emit(state.copyWith(errorMessage: AdminStrings.paymentNotVerified));
     } on InsufficientPointsException catch (e) {
       emit(state.copyWith(errorMessage: AdminStrings.insufficientPoints(e.required, e.balance)));
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString()));
     }
   }
+
+  Future<void> updatePaymentStatus(String orderId, PaymentStatus status) async {
+    try {
+      await _repository.updatePaymentStatus(orderId, status);
+      emit(state.copyWith(orders: [
+        for (final o in state.orders) o.id == orderId ? o.copyWith(paymentStatus: status) : o,
+      ]));
+    } catch (e) {
+      emit(state.copyWith(errorMessage: e.toString()));
+    }
+  }
+
+  Future<OrderCheck> checkOrder(Order order) => _repository.checkOrder(order);
 
   Future<void> createBatch(String name, List<String> orderIds) async {
     await _repository.createBatch(name, orderIds);

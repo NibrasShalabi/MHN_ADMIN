@@ -1,3 +1,4 @@
+import '../../features/shipping/data/repository/shipping_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -60,6 +61,9 @@ void setupInjector() {
   getIt.registerLazySingleton<CategoriesRepository>(
         () => FirebaseAdminCategoriesRepository(db),
   );
+
+  // ===== Shipping =====
+  getIt.registerLazySingleton(() => ShippingRepository(db));
 
   // ===== Orders =====
   getIt.registerLazySingleton<OrdersRepository>(

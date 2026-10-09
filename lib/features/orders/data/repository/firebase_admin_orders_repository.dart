@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import '../../domain/entities/order.dart';
 import '../../domain/entities/insufficient_points_exception.dart';
 import '../../domain/entities/order_batch.dart';
+import '../../domain/entities/order_check.dart';
+import '../../domain/entities/payment_not_verified_exception.dart';
+import '../../../shipping/domain/entities/shipping_rates.dart';
 import 'orders_repository.dart';
 
 /// Firebase implementation لـ OrdersRepository في الـ Admin
@@ -67,6 +70,10 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       final order = (await tx.get(orderRef)).data() ?? const <String, dynamic>{};
       final userId = order['userId'] as String?;
       final userRef = userId == null ? null : _db.collection('users').doc(userId);
+      final paidInPoints = order['paymentMethod'] == 'points';
+      if (status == OrderStatus.confirmed && !paidInPoints && order['paymentStatus'] != PaymentStatus.verified.name) {
+        throw const PaymentNotVerifiedException();
+      }
       final deducted = (order['pointsDeducted'] as num?)?.toInt() ?? 0;
       final awarded = (order['pointsAwarded'] as num?)?.toInt() ?? 0;
 
@@ -78,7 +85,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       // Purchase reward: once, when delivered; taken back if cancelled afterwards.
       final awarding = status == OrderStatus.delivered && awarded == 0 && userRef != null;
       final revoking = status == OrderStatus.cancelled && awarded > 0 && order['pointsAwardRevoked'] != true;
-      final reward = awarding ? await _purchaseReward(tx, (order['total'] as num? ?? 0).toDouble()) : 0;
+      final reward = awarding ? await _purchaseReward(tx, ((order['itemsTotal'] ?? order['total']) as num? ?? 0).toDouble()) : 0;
       if (cost > 0) {
         final balance = ((await tx.get(userRef!)).data()?['loyaltyPoints'] as num?)?.toInt() ?? 0;
         if (balance < cost) throw InsufficientPointsException(required: cost, balance: balance);
@@ -148,6 +155,61 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
     });
   }
 
+  @override
+  Future<void> updatePaymentStatus(String orderId, PaymentStatus status) =>
+      _db.collection('orders').doc(orderId).update({'paymentStatus': status.name});
+
+  /// Same formula as the client's checkout — keep both in step.
+  @override
+  Future<OrderCheck> checkOrder(Order order) async {
+    final moneyItems = order.items.where((i) => !i.isPoints && i.productId.isNotEmpty).toList();
+    final ids = moneyItems.map((i) => i.productId).toSet().toList();
+
+    final products = <String, Map<String, dynamic>>{};
+    final promos = <String, double>{};
+    final now = DateTime.now();
+    for (var i = 0; i < ids.length; i += 30) {
+      final chunk = ids.sublist(i, (i + 30).clamp(0, ids.length));
+      final results = await Future.wait([
+        _db.collection('products').where(FieldPath.documentId, whereIn: chunk).get(),
+        _db.collection('promotions').where('productId', whereIn: chunk).get(),
+      ]);
+      for (final d in results[0].docs) {
+        products[d.id] = d.data();
+      }
+      for (final d in results[1].docs) {
+        final p = d.data();
+        final start = (p['startTime'] as Timestamp?)?.toDate();
+        final end = (p['endTime'] as Timestamp?)?.toDate();
+        final live = p['isActive'] != false && (start == null || !now.isBefore(start)) && (end == null || now.isBefore(end));
+        final pct = (p['discountPercentage'] as num? ?? 0).toDouble();
+        final id = p['productId'] as String;
+        if (live && pct > (promos[id] ?? 0)) promos[id] = pct;
+      }
+    }
+
+    var items = 0.0;
+    var supply = 0.0;
+    for (final item in moneyItems) {
+      final p = products[item.productId];
+      if (p == null) continue;
+      final price = (p['price'] as num? ?? 0).toDouble();
+      final productPct = (p['discountPercentage'] as num? ?? 0).toDouble();
+      final productEnd = (p['discountEndTime'] as Timestamp?)?.toDate();
+      final productLive = productPct > 0 && (productEnd == null || now.isBefore(productEnd));
+      final pct = (promos[item.productId] ?? 0) > 0 ? promos[item.productId]! : (productLive ? productPct : 0);
+      items += price * (1 - pct / 100) * item.quantity;
+      supply += (p['shippingPrice'] as num? ?? 0).toDouble() * item.quantity;
+    }
+
+    final rates = ShippingRates.fromMap((await _db.collection('config').doc('shipping').get()).data() ?? const {});
+    return OrderCheck(
+      expectedItems: items,
+      expectedSupplyShipping: supply,
+      expectedDelivery: rates.deliveryFor(order.governorate, items),
+    );
+  }
+
   // ===== Batches =====
 
   @override
@@ -189,6 +251,12 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       receiptUrl: d['receiptUrl'] as String?,
       address: d['address'] as String? ?? '',
       totalPrice: (d['total'] as num? ?? 0).toDouble(),
+      itemsTotal: ((d['itemsTotal'] ?? d['total']) as num? ?? 0).toDouble(),
+      supplyShipping: (d['supplyShipping'] as num? ?? 0).toDouble(),
+      paymentStatus: PaymentStatus.values.firstWhere(
+        (s) => s.name == d['paymentStatus'],
+        orElse: () => PaymentStatus.pending,
+      ),
       pointsTotal: (d['pointsTotal'] as num?)?.toInt() ?? 0,
       deliveryFee: (d['deliveryFee'] as num? ?? 0).toDouble(),
       paymentMethod: _mapPaymentMethod(d['paymentMethod'] as String?),
@@ -200,8 +268,12 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       statusNote: d['statusNote'] as String?,
       items: (d['items'] as List<dynamic>? ?? [])
           .map((item) => OrderItem(
+        productId: item['productId'] as String? ?? '',
         productName: item['name'] as String? ?? '',
-        quantity: item['quantity'] as int? ?? 1,
+        quantity: (item['quantity'] as num? ?? 1).toInt(),
+        unitPrice: ((item['unitPrice'] ?? item['priceSnapshot']) as num? ?? 0).toDouble(),
+        shippingPerUnit: (item['shippingPerUnit'] as num? ?? 0).toDouble(),
+        isPoints: item['pricing'] == 'points',
       ))
           .toList(),
     );

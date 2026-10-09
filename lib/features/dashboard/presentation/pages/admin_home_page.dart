@@ -1,3 +1,4 @@
+import '../../../shipping/presentation/pages/shipping_page.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
@@ -68,6 +69,7 @@ class _SectionBody extends StatelessWidget {
         AdminSection.dashboard => DashboardPage(onNavigate: onNavigate),
         AdminSection.products => const ProductsPage(),
         AdminSection.orders => const OrdersPage(),
+        AdminSection.shipping => const ShippingPage(),
         AdminSection.categories => const CategoriesPage(),
         AdminSection.suggestions => const SuggestionsPage(),
         AdminSection.support => const SupportPage(),

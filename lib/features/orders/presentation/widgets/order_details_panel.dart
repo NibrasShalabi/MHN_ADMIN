@@ -10,6 +10,7 @@ import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_status_chip.dart';
 import '../../domain/entities/order.dart';
+import '../../domain/entities/order_check.dart';
 import '../cubits/orders_cubit.dart';
 import 'order_status_x.dart';
 
@@ -27,6 +28,15 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
   OrderStatus? _pendingStatus;
   final _noteController = TextEditingController();
   bool _notifyCustomer = true;
+  late PaymentStatus _paymentStatus = widget.order.paymentStatus;
+
+  /// Re-computed once when the panel opens — a handful of reads, not per rebuild.
+  late final Future<OrderCheck> _check = widget.cubit.checkOrder(widget.order);
+
+  void _setPayment(PaymentStatus status) {
+    setState(() => _paymentStatus = status);
+    widget.cubit.updatePaymentStatus(widget.order.id, status);
+  }
 
   @override
   void dispose() {
@@ -91,7 +101,11 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
             null => AdminStrings.paymentNotSet,
           },
         ),
-        if (order.txid case final txid?) _CopyRow(label: AdminStrings.txid, value: txid),
+        if (order.txid case final txid?) ...[
+          _CopyRow(label: AdminStrings.txid, value: txid),
+          if (_explorerUrl(order.paymentMethod, txid) case final url?)
+            _LinkRow(label: '', url: url, text: AdminStrings.openInExplorer),
+        ],
         if (order.receiptUrl case final url?)
           _LinkRow(label: AdminStrings.paymentReceipt, url: url),
         if (order.governorate case final g?) _InfoRow(label: AdminStrings.governorate, value: g),
@@ -119,15 +133,20 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
         const SizedBox(height: AdminConstants.spacingLg),
         const Divider(color: AdminColors.border, height: 1),
         const SizedBox(height: AdminConstants.spacingLg),
-        if (order.deliveryFee > 0)
-          _InfoRow(
-            label: AdminStrings.deliveryFee,
-            value: '${currency.format(order.deliveryFee)} ل.س',
+        if (order.itemsTotal > 0) ...[
+          _InfoRow(label: AdminStrings.itemsTotal, value: '${currency.format(order.itemsTotal)} ل.س'),
+          _InfoRow(label: AdminStrings.supplyShipping, value: '${currency.format(order.supplyShipping)} ل.س'),
+          _InfoRow(label: AdminStrings.deliveryFee, value: '${currency.format(order.deliveryFee)} ل.س'),
+        ],
+        _InfoRow(label: AdminStrings.grandTotal, value: '${currency.format(order.totalPrice)} ل.س'),
+        if (order.itemsTotal > 0)
+          FutureBuilder<OrderCheck>(
+            future: _check,
+            builder: (context, snap) => switch (snap.data) {
+              null => const SizedBox.shrink(),
+              final check => _CheckNote(check: check, total: order.totalPrice, currency: currency),
+            },
           ),
-        _InfoRow(
-          label: AdminStrings.orderTotal,
-          value: '${currency.format(order.totalPrice)} ل.س',
-        ),
         if (order.pointsTotal > 0)
           _InfoRow(
             label: AdminStrings.orderPointsTotal,
@@ -136,6 +155,37 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
         const SizedBox(height: AdminConstants.spacingLg),
         const Divider(color: AdminColors.border, height: 1),
         const SizedBox(height: AdminConstants.spacingLg),
+        if (!order.isPaidInPoints) ...[
+          Row(
+            children: [
+              Text(AdminStrings.paymentStatus, style: AdminTextStyles.tableHeader),
+              const SizedBox(width: AdminConstants.spacingSm),
+              AdminStatusChip(label: _paymentStatus.label, color: _paymentStatus.color),
+            ],
+          ),
+          const SizedBox(height: AdminConstants.spacingSm),
+          Row(
+            children: [
+              Expanded(
+                child: AdminButton(
+                  label: AdminStrings.markPaymentVerified,
+                  onPressed: _paymentStatus == PaymentStatus.verified ? null : () => _setPayment(PaymentStatus.verified),
+                ),
+              ),
+              const SizedBox(width: AdminConstants.spacingSm),
+              Expanded(
+                child: AdminButton(
+                  label: AdminStrings.markPaymentRejected,
+                  kind: AdminButtonKind.danger,
+                  onPressed: _paymentStatus == PaymentStatus.rejected ? null : () => _setPayment(PaymentStatus.rejected),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AdminConstants.spacingLg),
+          const Divider(color: AdminColors.border, height: 1),
+          const SizedBox(height: AdminConstants.spacingLg),
+        ],
         Text(AdminStrings.changeStatus, style: AdminTextStyles.tableHeader),
         const SizedBox(height: AdminConstants.spacingSm),
         Wrap(
@@ -256,8 +306,9 @@ class _CopyRow extends StatelessWidget {
 class _LinkRow extends StatelessWidget {
   final String label;
   final String url;
+  final String text;
 
-  const _LinkRow({required this.label, required this.url});
+  const _LinkRow({required this.label, required this.url, this.text = AdminStrings.openLink});
 
   @override
   Widget build(BuildContext context) {
@@ -270,10 +321,69 @@ class _LinkRow extends StatelessWidget {
           InkWell(
             onTap: () => launchUrl(Uri.parse(url), webOnlyWindowName: '_blank'),
             child: Text(
-              AdminStrings.openLink,
+              text,
               style: AdminTextStyles.caption.copyWith(color: AdminColors.gold, decoration: TextDecoration.underline),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+String? _explorerUrl(PaymentMethod? method, String txid) => switch (method) {
+      PaymentMethod.usdtTrc20 => 'https://tronscan.org/#/transaction/$txid',
+      PaymentMethod.usdtBep20 => 'https://bscscan.com/tx/$txid',
+      PaymentMethod.usdtErc20 => 'https://etherscan.io/tx/$txid',
+      _ => null,
+    };
+
+extension on PaymentStatus {
+  String get label => switch (this) {
+        PaymentStatus.pending => AdminStrings.paymentPending,
+        PaymentStatus.verified => AdminStrings.paymentVerified,
+        PaymentStatus.rejected => AdminStrings.paymentRejected,
+      };
+
+  Color get color => switch (this) {
+        PaymentStatus.pending => AdminColors.warning,
+        PaymentStatus.verified => AdminColors.success,
+        PaymentStatus.rejected => AdminColors.danger,
+      };
+}
+
+/// ✅ / ⚠️ under the totals — the order's amount vs today's prices.
+class _CheckNote extends StatelessWidget {
+  final OrderCheck check;
+  final double total;
+  final NumberFormat currency;
+
+  const _CheckNote({required this.check, required this.total, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = check.matches(total);
+    final color = ok ? AdminColors.success : AdminColors.warning;
+    return Padding(
+      padding: const EdgeInsets.only(top: AdminConstants.spacingSm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(ok ? Icons.verified_outlined : Icons.warning_amber_rounded, size: 16, color: color),
+              const SizedBox(width: AdminConstants.spacingXs),
+              Expanded(
+                child: Text(ok ? AdminStrings.totalsMatch : AdminStrings.totalsMismatch,
+                    style: AdminTextStyles.caption.copyWith(color: color)),
+              ),
+            ],
+          ),
+          if (!ok) ...[
+            Text(AdminStrings.totalsExpected('${currency.format(check.expectedTotal)} ل.س'), style: AdminTextStyles.caption),
+            Text(AdminStrings.totalsMismatchNote,
+                style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
+          ],
         ],
       ),
     );

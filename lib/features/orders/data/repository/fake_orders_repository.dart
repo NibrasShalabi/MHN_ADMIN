@@ -1,5 +1,6 @@
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_batch.dart';
+import '../../domain/entities/order_check.dart';
 import '../../presentation/widgets/order_message.dart';
 import 'orders_repository.dart';
 
@@ -30,6 +31,16 @@ class FakeOrdersRepository implements OrdersRepository {
   ];
   final List<OrderMessage> _messages = [];
   final List<OrderBatch> _batches = [];
+
+  @override
+  Future<void> updatePaymentStatus(String orderId, PaymentStatus status) async {
+    final i = _orders.indexWhere((o) => o.id == orderId);
+    if (i != -1) _orders[i] = _orders[i].copyWith(paymentStatus: status);
+  }
+
+  @override
+  Future<OrderCheck> checkOrder(Order order) async =>
+      OrderCheck(expectedItems: order.itemsTotal, expectedSupplyShipping: order.supplyShipping, expectedDelivery: order.deliveryFee);
 
   @override
   Future<List<Order>> getOrders() async {

@@ -260,6 +260,32 @@ class AdminStrings {
   static const String paymentReceipt = 'إيصال الدفع';
   static const String paymentShamCash = 'شام كاش';
   static const String paymentPoints = 'نقاط الولاء';
+
+  // ===== Shipping =====
+  static const String navShipping = 'الشحن';
+  static const String deliveryFees = 'رسوم التوصيل حسب المحافظة';
+  static const String deliveryFeesHint = 'من عندك لعند العميل — بتنضاف تلقائياً عالطلب حسب محافظته. اترك 0 للمجاني.';
+  static const String freeDelivery = 'توصيل مجاني فوق مبلغ معيّن';
+  static const String freeDeliveryAbove = 'الحد الأدنى لقيمة المنتجات';
+  static const String freeDeliveryHint = 'مطفّى افتراضياً — شغّله بس توافق عليه';
+  static const String supplyShippingLabel = 'شحن التوريد للقطعة (0 = مجاني)';
+  static const String itemsTotal = 'المنتجات';
+  static const String supplyShipping = 'شحن التوريد';
+  static const String grandTotal = 'المطلوب دفعه';
+
+  // ===== Payment verification =====
+  static const String paymentStatus = 'حالة الدفع';
+  static const String paymentPending = 'بانتظار التحقق';
+  static const String paymentVerified = 'تم التحقق';
+  static const String paymentRejected = 'مرفوض';
+  static const String markPaymentVerified = 'تأكيد استلام الدفع';
+  static const String markPaymentRejected = 'رفض الدفع';
+  static const String openInExplorer = 'افتح بالـ explorer';
+  static const String paymentNotVerified = 'لازم تتحقق من الدفع قبل تأكيد الطلب';
+  static const String totalsMatch = 'المبلغ مطابق للأسعار الحالية';
+  static const String totalsMismatch = 'المبلغ لا يطابق الأسعار الحالية — راجع قبل التأكيد';
+  static String totalsExpected(String amount) => 'المتوقع حسب الأسعار الحالية: $amount';
+  static const String totalsMismatchNote = 'ممكن الفرق يكون لأن سعر أو عرض تغيّر بعد الطلب';
   static const String address = 'العنوان';
   static const String payment = 'الدفع';
   static const String paymentCash = 'عند الاستلام';
