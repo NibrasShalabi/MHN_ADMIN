@@ -10,6 +10,7 @@ import '../../domain/entities/message_event.dart';
 import '../../domain/entities/message_template.dart';
 import '../widgets/broadcasts_section.dart';
 import '../widgets/template_editor.dart';
+import '../../../../core/error/admin_error.dart';
 
 /// Everything the customer reads in their inbox: broadcasts and the
 /// automatic messages behind every order, payment, suggestion and reply.
@@ -38,7 +39,7 @@ class _MessagesPageState extends State<MessagesPage> {
       final t = await _service.templates(refresh: true);
       if (mounted) setState(() => _saved = _draft = t);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = AdminError.message(e));
     }
   }
 
@@ -57,7 +58,7 @@ class _MessagesPageState extends State<MessagesPage> {
       _saved = _draft;
       _toast(AdminStrings.saved);
     } catch (e) {
-      _toast(e.toString());
+      _toast(AdminError.message(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

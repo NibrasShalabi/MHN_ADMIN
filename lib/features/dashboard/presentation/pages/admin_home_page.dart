@@ -3,10 +3,6 @@ import '../../../payments/presentation/pages/payment_settings_page.dart';
 import '../../../shipping/presentation/pages/shipping_page.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/admin_constants.dart';
-import '../../../../core/constants/admin_strings.dart';
-import '../../../../core/theme/admin_colors.dart';
-import '../../../../core/theme/admin_text_styles.dart';
-import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_shell.dart';
 import '../../../analytics/presentation/pages/analytics_page.dart';
 import '../../../deals/presentation/pages/deals_admin_page.dart';
@@ -86,38 +82,6 @@ class _SectionBody extends StatelessWidget {
         AdminSection.deals => const DealsAdminPage(),
         AdminSection.reviews => const ReviewsPage(),
       },
-    );
-  }
-}
-/// Temporary: shows the variants block on its own so the presets flow can
-/// be tried before the full product form exists.
-
-
-class _Stub extends StatelessWidget {
-  final String label;
-
-  const _Stub({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return AdminCard(
-      title: label,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingXl),
-        child: Center(
-          child: Column(
-            children: [
-              const Icon(
-                Icons.construction_outlined,
-                size: 40,
-                color: AdminColors.textDisabled,
-              ),
-              const SizedBox(height: AdminConstants.spacingMd),
-              Text(AdminStrings.sectionNotReady, style: AdminTextStyles.caption),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import '../../../products/data/repository/products_repository.dart';
 import '../../data/repository/presets_repository.dart';
 import '../../domain/entities/presets.dart';
 import 'presets_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class PresetsCubit extends SafeCubit<PresetsState> {
   final PresetsRepository _repository;
@@ -41,7 +42,7 @@ class PresetsCubit extends SafeCubit<PresetsState> {
         sizeGuideUsage: sizeGuideUsage,
       ));
     } catch (e) {
-      emit(state.copyWith(status: PresetsStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: PresetsStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 

@@ -3,6 +3,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/categories_repository.dart';
 import '../../domain/entities/category.dart';
 import 'categories_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class CategoriesCubit extends SafeCubit<CategoriesState> {
   final CategoriesRepository _repository;
@@ -15,7 +16,7 @@ class CategoriesCubit extends SafeCubit<CategoriesState> {
       final categories = await _repository.getCategories();
       emit(state.copyWith(status: CategoriesStatus.loaded, categories: categories));
     } catch (e) {
-      emit(state.copyWith(status: CategoriesStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: CategoriesStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 

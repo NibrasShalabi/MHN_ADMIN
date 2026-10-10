@@ -2,6 +2,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/support_repository.dart';
 import '../../domain/entities/support_message.dart';
 import 'support_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class SupportCubit extends SafeCubit<SupportState> {
   final SupportRepository _repository;
@@ -14,7 +15,7 @@ class SupportCubit extends SafeCubit<SupportState> {
       final messages = await _repository.getMessages();
       emit(state.copyWith(status: SupportPageStatus.loaded, messages: messages));
     } catch (e) {
-      emit(state.copyWith(status: SupportPageStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: SupportPageStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -27,7 +28,7 @@ class SupportCubit extends SafeCubit<SupportState> {
           m.id == message.id ? m.copyWith(status: SupportStatus.resolved, reply: reply) : m,
       ]));
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
     }
   }
 }

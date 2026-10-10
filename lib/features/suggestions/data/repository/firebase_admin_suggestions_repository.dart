@@ -17,7 +17,7 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
 
   @override
   Future<List<ProductSuggestion>> getSuggestions() async {
-    final snap = await _suggestions.orderBy('submittedAt', descending: true).get();
+    final snap = await _suggestions.orderBy('submittedAt', descending: true).limit(150).get();
 
     // Newer suggestions carry the name; older ones are looked up 30 users per read.
     final missing = {

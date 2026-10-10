@@ -3,6 +3,7 @@ import '../../data/repository/products_repository.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/product_private.dart';
 import 'products_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 /// Writes patch the list locally instead of reloading the whole
 /// collection — a full reload after every save was N reads each time.
@@ -17,7 +18,7 @@ class ProductsCubit extends SafeCubit<ProductsState> {
       final products = await _repository.getProducts();
       emit(state.copyWith(status: ProductsStatus.loaded, products: products));
     } catch (e) {
-      emit(state.copyWith(status: ProductsStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: ProductsStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -44,7 +45,7 @@ class ProductsCubit extends SafeCubit<ProductsState> {
       emit(state.copyWith(products: patch(state.products)));
       return true;
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
       return false;
     }
   }

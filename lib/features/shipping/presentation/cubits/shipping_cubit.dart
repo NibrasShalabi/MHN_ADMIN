@@ -1,6 +1,7 @@
 import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/shipping_repository.dart';
 import '../../domain/entities/shipping_rates.dart';
+import '../../../../core/error/admin_error.dart';
 
 enum ShippingStatus { loading, ready, saving, saved, error }
 
@@ -21,7 +22,7 @@ class ShippingCubit extends SafeCubit<ShippingState> {
     try {
       emit(ShippingState(status: ShippingStatus.ready, rates: await _repo.getRates()));
     } catch (e) {
-      emit(ShippingState(status: ShippingStatus.error, error: e.toString()));
+      emit(ShippingState(status: ShippingStatus.error, error: AdminError.message(e)));
     }
   }
 
@@ -32,7 +33,7 @@ class ShippingCubit extends SafeCubit<ShippingState> {
       await _repo.saveRates(rates);
       emit(ShippingState(status: ShippingStatus.saved, rates: rates));
     } catch (e) {
-      emit(ShippingState(status: ShippingStatus.ready, rates: rates, error: e.toString()));
+      emit(ShippingState(status: ShippingStatus.ready, rates: rates, error: AdminError.message(e)));
     }
   }
 }

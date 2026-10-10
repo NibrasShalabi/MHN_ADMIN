@@ -2,6 +2,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/suppliers_repository.dart';
 import '../../domain/entities/supplier.dart';
 import 'suppliers_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class SuppliersCubit extends SafeCubit<SuppliersState> {
   final SuppliersRepository _repository;
@@ -14,7 +15,7 @@ class SuppliersCubit extends SafeCubit<SuppliersState> {
       final suppliers = await _repository.getSuppliers();
       emit(state.copyWith(status: SuppliersStatus.loaded, suppliers: suppliers));
     } catch (e) {
-      emit(state.copyWith(status: SuppliersStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: SuppliersStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -28,7 +29,7 @@ class SuppliersCubit extends SafeCubit<SuppliersState> {
       await load();
       return true;
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
       return false;
     }
   }

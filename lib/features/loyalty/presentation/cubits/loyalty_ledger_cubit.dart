@@ -2,6 +2,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/loyalty_repository.dart';
 import 'loyalty_ledger_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class LoyaltyLedgerCubit extends SafeCubit<LoyaltyLedgerState> {
   final LoyaltyRepository _repository;
@@ -14,7 +15,7 @@ class LoyaltyLedgerCubit extends SafeCubit<LoyaltyLedgerState> {
       final transactions = await _repository.getTransactions();
       emit(state.copyWith(status: LedgerStatus.loaded, transactions: transactions));
     } catch (e) {
-      emit(state.copyWith(status: LedgerStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: LedgerStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 

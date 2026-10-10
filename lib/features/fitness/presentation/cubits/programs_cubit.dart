@@ -3,6 +3,7 @@ import '../../data/repository/fitness_repository.dart';
 import '../../domain/entities/fitness_section.dart';
 import '../../domain/entities/health_program.dart';
 import 'programs_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class ProgramsCubit extends SafeCubit<ProgramsState> {
   final FitnessRepository _repository;
@@ -20,7 +21,7 @@ class ProgramsCubit extends SafeCubit<ProgramsState> {
         ...saved.values,
       ]));
     } catch (e) {
-      emit(state.copyWith(status: ProgramsStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: ProgramsStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -29,7 +30,7 @@ class ProgramsCubit extends SafeCubit<ProgramsState> {
       await _repository.saveProgram(program, order: FitnessSection.byId(program.id)?.index ?? 99);
       await loadPrograms();
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
     }
   }
 
@@ -38,7 +39,7 @@ class ProgramsCubit extends SafeCubit<ProgramsState> {
       await _repository.deleteProgram(id);
       await loadPrograms();
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
     }
   }
 }

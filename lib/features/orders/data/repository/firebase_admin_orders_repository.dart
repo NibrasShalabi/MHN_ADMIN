@@ -263,6 +263,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
     final snap = await _db
         .collection('order_batches')
         .orderBy('createdAt', descending: true)
+        .limit(100)
         .get();
     return snap.docs.map(_batchFromDoc).toList();
   }

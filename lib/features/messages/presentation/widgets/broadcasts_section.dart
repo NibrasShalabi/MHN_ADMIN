@@ -13,6 +13,7 @@ import '../../../../core/widgets/admin_text_input.dart';
 import '../../data/repository/broadcasts_repository.dart';
 import '../../domain/entities/broadcast.dart';
 import 'message_preview.dart';
+import '../../../../core/error/admin_error.dart';
 
 /// Compose a message for every customer, and see / remove what was sent.
 class BroadcastsSection extends StatefulWidget {
@@ -66,7 +67,7 @@ class _BroadcastsSectionState extends State<BroadcastsSection> {
       _sent = _repo.recent();
       _toast(done);
     } catch (e) {
-      _toast(e.toString());
+      _toast(AdminError.message(e));
     } finally {
       if (mounted) setState(() => _sending = false);
     }

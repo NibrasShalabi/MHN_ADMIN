@@ -8,6 +8,7 @@ import '../../domain/entities/payment_not_verified_exception.dart';
 import '../../domain/entities/order_batch.dart';
 import '../../../../core/constants/admin_strings.dart';
 import 'orders_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class OrdersCubit extends SafeCubit<OrdersState> {
   final OrdersRepository _repository;
@@ -21,7 +22,7 @@ class OrdersCubit extends SafeCubit<OrdersState> {
       final batches = await _repository.getBatches();
       emit(state.copyWith(status: OrdersStatus.loaded, orders: orders, batches: batches));
     } catch (e) {
-      emit(state.copyWith(status: OrdersStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: OrdersStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -42,7 +43,7 @@ class OrdersCubit extends SafeCubit<OrdersState> {
     } on InsufficientPointsException catch (e) {
       emit(state.copyWith(errorMessage: AdminStrings.insufficientPoints(e.required, e.balance)));
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
     }
   }
 
@@ -53,7 +54,7 @@ class OrdersCubit extends SafeCubit<OrdersState> {
         for (final o in state.orders) o.id == order.id ? o.copyWith(paymentStatus: status) : o,
       ]));
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
     }
   }
 
@@ -70,7 +71,7 @@ class OrdersCubit extends SafeCubit<OrdersState> {
   }
 
   /// The same status-change call [updateStatus] makes, once per order in
-  /// the batch â€” a batch's "unified message" is that shared note, sent to
+  /// the batch — a batch's "unified message" is that shared note, sent to
   /// every order (and so every customer) it contains, in one action.
   Future<void> applyBulkStatus(
       OrderBatch batch,

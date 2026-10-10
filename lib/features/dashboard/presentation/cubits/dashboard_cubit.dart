@@ -11,6 +11,7 @@ import '../../../support/data/repository/support_repository.dart';
 import '../../../support/domain/entities/support_message.dart';
 import '../../domain/entities/dashboard_summary.dart';
 import 'dashboard_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class DashboardCubit extends SafeCubit<DashboardState> {
   final OrdersRepository _ordersRepository;
@@ -69,7 +70,7 @@ class DashboardCubit extends SafeCubit<DashboardState> {
 
       if (!isClosed) emit(state.copyWith(status: DashboardStatus.loaded, summary: summary));
     } catch (e) {
-      if (!isClosed) emit(state.copyWith(status: DashboardStatus.error, errorMessage: e.toString()));
+      if (!isClosed) emit(state.copyWith(status: DashboardStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 }

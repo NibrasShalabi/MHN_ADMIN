@@ -4,6 +4,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repositories/deals_admin_repository.dart';
 import '../../domain/entities/deal_promotion.dart';
 import 'deals_admin_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 enum DealsAdminResult { success, duplicatePromotion, invalid, failure }
 
@@ -21,7 +22,7 @@ class DealsAdminCubit extends SafeCubit<DealsAdminState> {
       // Countdown only — re-emits the same data, never re-reads Firestore.
       _ticker ??= Timer.periodic(const Duration(minutes: 1), (_) => emit(state.copyWith(tick: state.tick + 1)));
     } catch (e) {
-      emit(state.copyWith(status: DealsAdminStatus.failure, error: e.toString()));
+      emit(state.copyWith(status: DealsAdminStatus.failure, error: AdminError.message(e)));
     }
   }
 
@@ -56,7 +57,7 @@ class DealsAdminCubit extends SafeCubit<DealsAdminState> {
       await _refresh();
       return DealsAdminResult.success;
     } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+      emit(state.copyWith(error: AdminError.message(e)));
       return DealsAdminResult.failure;
     }
   }
@@ -66,7 +67,7 @@ class DealsAdminCubit extends SafeCubit<DealsAdminState> {
       await _repository.cancelPromotion(id);
       await _refresh();
     } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+      emit(state.copyWith(error: AdminError.message(e)));
     }
   }
 

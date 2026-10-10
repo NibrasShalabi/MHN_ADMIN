@@ -49,6 +49,7 @@ class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
     final snap = await _db
         .collection('loyaltyTransactions')
         .orderBy('createdAt', descending: true)
+        .limit(300)
         .get();
     return snap.docs.map((doc) {
       final d = doc.data();

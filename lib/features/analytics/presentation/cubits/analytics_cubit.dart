@@ -3,6 +3,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/analytics_repository.dart';
 import '../../domain/entities/analytics_data.dart';
 import 'analytics_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class AnalyticsCubit extends SafeCubit<AnalyticsState> {
   final AnalyticsRepository _repository;
@@ -15,7 +16,7 @@ class AnalyticsCubit extends SafeCubit<AnalyticsState> {
       final data = await _repository.getAnalytics();
       emit(state.copyWith(status: AnalyticsPageStatus.loaded, data: data));
     } catch (e) {
-      emit(state.copyWith(status: AnalyticsPageStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: AnalyticsPageStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -33,7 +34,7 @@ class AnalyticsCubit extends SafeCubit<AnalyticsState> {
     return all.length <= days ? all : all.sublist(all.length - days);
   }
 
-  /// The window immediately before [filteredDaily], same length â€” the
+  /// The window immediately before [filteredDaily], same length — the
   /// baseline the up/down arrows on the stat cards compare against.
   /// Empty when there isn't enough history yet (e.g. the 30-day period
   /// against a 30-day fake dataset), and the UI hides the arrow then

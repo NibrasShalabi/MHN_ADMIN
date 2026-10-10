@@ -2,6 +2,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/fitness_repository.dart';
 import '../../domain/entities/fitness_submission.dart';
 import 'submissions_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class SubmissionsCubit extends SafeCubit<SubmissionsState> {
   final FitnessRepository _repository;
@@ -14,7 +15,7 @@ class SubmissionsCubit extends SafeCubit<SubmissionsState> {
       final submissions = await _repository.getSubmissions();
       emit(state.copyWith(status: SubmissionsStatus.loaded, submissions: submissions));
     } catch (e) {
-      emit(state.copyWith(status: SubmissionsStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: SubmissionsStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -32,7 +33,7 @@ class SubmissionsCubit extends SafeCubit<SubmissionsState> {
       ));
       return true;
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
       return false;
     }
   }

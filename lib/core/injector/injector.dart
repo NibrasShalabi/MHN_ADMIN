@@ -8,7 +8,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../features/analytics/data/repository/analytics_repository.dart';
-import '../../features/analytics/data/repository/fake_analytics_repository.dart';
 import '../../features/analytics/data/repository/firebase_analytics_repository.dart';
 import '../../features/auth/data/repository/auth_repository.dart';
 import '../../features/auth/data/repository/firebase_admin_auth_repository.dart';
@@ -20,12 +19,10 @@ import '../../features/fitness/data/repository/firebase_admin_fitness_repository
 import '../../features/fitness/data/repository/fitness_repository.dart';
 import '../../features/home_banners/data/repository/firebase_admin_promo_banners_repository.dart';
 import '../../features/home_banners/data/repository/promo_banners_repository.dart';
-import '../../features/loyalty/data/repository/fake_loyalty_repository.dart';
 import '../../features/loyalty/data/repository/firebase_admin_loyalty_repository.dart';
 import '../../features/loyalty/data/repository/loyalty_repository.dart';
 import '../../features/orders/data/repository/firebase_admin_orders_repository.dart';
 import '../../features/orders/data/repository/orders_repository.dart';
-import '../../features/presets/data/repository/fake_presets_repository.dart';
 import '../../features/presets/data/repository/firebase_admin_presets_repository.dart';
 import '../../features/presets/data/repository/presets_repository.dart';
 import '../../features/products/data/repository/firebase_admin_products_repository.dart';

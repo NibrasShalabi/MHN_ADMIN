@@ -3,6 +3,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/loyalty_repository.dart';
 import '../../domain/entities/loyalty_rules.dart';
 import 'loyalty_rules_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class LoyaltyRulesCubit extends SafeCubit<LoyaltyRulesState> {
   final LoyaltyRepository _repository;
@@ -15,7 +16,7 @@ class LoyaltyRulesCubit extends SafeCubit<LoyaltyRulesState> {
       final rules = await _repository.getRules();
       emit(state.copyWith(status: LoyaltyRulesStatus.loaded, rules: rules));
     } catch (e) {
-      emit(state.copyWith(status: LoyaltyRulesStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: LoyaltyRulesStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 

@@ -8,6 +8,7 @@ import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../data/repository/fitness_repository.dart';
+import '../../../../core/error/admin_error.dart';
 
 /// The specialist's WhatsApp number, used by the supplements page and the
 /// "ask the specialist" button on consult-only products.
@@ -57,7 +58,7 @@ class _SpecialistWhatsappCardState extends State<SpecialistWhatsappCard> {
       _saved = _value;
       _toast(AdminStrings.saved);
     } catch (e) {
-      _toast(e.toString());
+      _toast(AdminError.message(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

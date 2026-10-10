@@ -3,6 +3,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/promo_banners_repository.dart';
 import '../../domain/entities/promo_banner.dart';
 import 'promo_banners_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class PromoBannersCubit extends SafeCubit<PromoBannersState> {
   final PromoBannersRepository _repository;
@@ -15,7 +16,7 @@ class PromoBannersCubit extends SafeCubit<PromoBannersState> {
       final banners = await _repository.getBanners();
       emit(state.copyWith(status: PromoBannersStatus.loaded, banners: banners));
     } catch (e) {
-      emit(state.copyWith(status: PromoBannersStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: PromoBannersStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 

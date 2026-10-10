@@ -11,6 +11,7 @@ import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../data/repository/payment_settings_repository.dart';
 import '../../domain/entities/payment_settings.dart';
+import '../../../../core/error/admin_error.dart';
 
 /// Wallet addresses and the Sham Cash number customers pay to, plus an
 /// on/off switch per method. Saving asks for confirmation — a wrong
@@ -62,7 +63,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = AdminError.message(e);
         _loading = false;
       });
     }
@@ -95,7 +96,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       _saved = next;
       _toast(AdminStrings.saved);
     } catch (e) {
-      _toast(e.toString());
+      _toast(AdminError.message(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

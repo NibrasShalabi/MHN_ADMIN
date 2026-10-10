@@ -3,6 +3,7 @@ import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repository/suggestions_repository.dart';
 import '../../domain/entities/product_suggestion.dart';
 import 'suggestions_state.dart';
+import '../../../../core/error/admin_error.dart';
 
 class SuggestionsCubit extends SafeCubit<SuggestionsState> {
   final SuggestionsRepository _repository;
@@ -15,7 +16,7 @@ class SuggestionsCubit extends SafeCubit<SuggestionsState> {
       final suggestions = await _repository.getSuggestions();
       emit(state.copyWith(status: SuggestionsStatus.loaded, suggestions: suggestions));
     } catch (e) {
-      emit(state.copyWith(status: SuggestionsStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(status: SuggestionsStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
@@ -32,7 +33,7 @@ class SuggestionsCubit extends SafeCubit<SuggestionsState> {
         for (final s in state.suggestions) s.id == id ? s.copyWith(status: status) : s,
       ]));
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+      emit(state.copyWith(errorMessage: AdminError.message(e)));
     }
   }
 }
