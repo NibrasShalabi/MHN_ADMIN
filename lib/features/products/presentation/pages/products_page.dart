@@ -9,6 +9,8 @@ import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_data_table.dart';
 import '../../../../core/widgets/admin_text_input.dart';
+import '../../../categories/data/repository/categories_repository.dart';
+import '../../../categories/domain/entities/category.dart';
 import '../../data/repository/products_repository.dart';
 import '../../domain/entities/product.dart';
 import '../cubits/products_cubit.dart';
@@ -17,22 +19,27 @@ import 'product_form_page.dart';
 class ProductsPage extends StatelessWidget {
   final ProductPricing pricingMode;
 
-  const ProductsPage({super.key, this.pricingMode = ProductPricing.money});
+  /// Set from the fitness section: lists and creates only products in
+  /// fitness-scoped categories.
+  final CategoryScope? scope;
+
+  const ProductsPage({super.key, this.pricingMode = ProductPricing.money, this.scope});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => ProductsCubit(GetIt.instance<ProductsRepository>())..loadProducts(),
 
-      child: _ProductsView(pricingMode: pricingMode),
+      child: _ProductsView(pricingMode: pricingMode, scope: scope),
     );
   }
 }
 
 class _ProductsView extends StatefulWidget {
   final ProductPricing pricingMode;
+  final CategoryScope? scope;
 
-  const _ProductsView({required this.pricingMode});
+  const _ProductsView({required this.pricingMode, this.scope});
 
   @override
   State<_ProductsView> createState() => _ProductsViewState();
@@ -41,6 +48,13 @@ class _ProductsView extends StatefulWidget {
 class _ProductsViewState extends State<_ProductsView> {
   final _searchController = TextEditingController();
   String _query = '';
+
+  /// Category ids of [_ProductsView.scope]; null when the page isn't scoped.
+  late final Future<Set<String>?> _scopeIds = widget.scope == null
+      ? Future.value(null)
+      : GetIt.instance<CategoriesRepository>()
+          .getCategories()
+          .then((all) => {for (final c in all) if (c.scope == widget.scope) c.id});
 
   @override
   void dispose() {
@@ -54,7 +68,7 @@ class _ProductsViewState extends State<_ProductsView> {
         builder: (_) => BlocProvider.value(
           value: cubit,
 
-          child: ProductFormPage(product: product, pricingMode: widget.pricingMode),
+          child: ProductFormPage(product: product, pricingMode: widget.pricingMode, scope: widget.scope),
         ),
       ),
     );
@@ -85,8 +99,14 @@ class _ProductsViewState extends State<_ProductsView> {
           ],
         ),
         const SizedBox(height: AdminConstants.spacingLg),
-        BlocBuilder<ProductsCubit, ProductsState>(
+        FutureBuilder<Set<String>?>(
+          future: _scopeIds,
+          builder: (context, scopeSnap) => BlocBuilder<ProductsCubit, ProductsState>(
           builder: (context, state) {
+            if (scopeSnap.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final scopeIds = scopeSnap.data;
             if (state.status == ProductsStatus.loading ||
                 state.status == ProductsStatus.initial) {
               return const Padding(
@@ -103,6 +123,7 @@ class _ProductsViewState extends State<_ProductsView> {
             // The store tab and the loyalty gifts tab each list their own products.
             final products = state.products
                 .where((p) => p.pricing == widget.pricingMode && !p.dealOnly)
+                .where((p) => scopeIds == null || scopeIds.contains(p.category))
                 .where((p) => _query.isEmpty || p.name.contains(_query))
                 .toList();
             final cubit = context.read<ProductsCubit>();
@@ -172,6 +193,7 @@ class _ProductsViewState extends State<_ProductsView> {
 
             );
           },
+        ),
         ),
       ],
     );

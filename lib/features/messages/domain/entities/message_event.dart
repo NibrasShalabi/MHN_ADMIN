@@ -7,7 +7,8 @@ enum MessageVar {
   reason('reason', 'السبب'),
   product('product', 'المنتج'),
   note('note', 'ملاحظة الأدمن'),
-  reply('reply', 'نص الرد');
+  reply('reply', 'نص الرد'),
+  program('program', 'البرنامج');
 
   final String key;
   final String label;
@@ -42,7 +43,11 @@ enum MessageEvent {
   suggestionRejected('suggestion_rejected', 'suggestion', 'رفض اقتراح',
       'تم رفض اقتراحك', 'اقتراح "{product}" ما انقبل.\nالسبب: {reason}', [MessageVar.product, MessageVar.reason]),
   supportReply('support_reply', 'support_reply', 'رد الدعم الفني',
-      'رد من الدعم الفني', '{reply}', [MessageVar.reply]);
+      'رد من الدعم الفني', '{reply}', [MessageVar.reply]),
+  fitnessContacted('fitness_contacted', 'fitness', 'اللياقة: تم التواصل',
+      'طلبك بـ {program}', 'شفنا طلبك، والمختصة رح تتواصل معك على الواتساب قريباً.', [MessageVar.program]),
+  fitnessReply('fitness_reply', 'fitness', 'اللياقة: رد المختصة',
+      'رد المختصة — {program}', '{reply}', [MessageVar.program, MessageVar.reply]);
 
   final String key;
   final String type;
@@ -54,7 +59,7 @@ enum MessageEvent {
   const MessageEvent(this.key, this.type, this.label, this.defaultTitle, this.defaultBody, this.vars);
 
   /// A placeholder the body can't lose — without it the message says nothing.
-  MessageVar? get requiredVar => this == supportReply ? MessageVar.reply : null;
+  MessageVar? get requiredVar => this == supportReply || this == fitnessReply ? MessageVar.reply : null;
 
   /// The message an order status sends; pending has none.
   static MessageEvent? forStatus(OrderStatus status) => switch (status) {

@@ -494,4 +494,18 @@ class AdminStrings {
   static const String templateOn = 'تنبعت';
   static const String templateOff = 'موقّفة';
   static String templateMissingVar(String token) => 'النص لازم يحتوي $token';
+
+  // ===== Fitness =====
+  static const String fitnessProducts = 'المنتجات والمستحضرات';
+  static const String submissionStatus = 'الحالة';
+  static const String customerPhoneLabel = 'رقم الهاتف';
+  static const String customerGovernorateLabel = 'المحافظة';
+  static const String fitnessReplyLabel = 'رد للعميلة (بيوصلها برسائل التطبيق)';
+  static const String fitnessReplyHint = 'اكتبي الرد أو التعليمات…';
+  static const String fitnessReplySend = 'إرسال الرد';
+  static const String fitnessReplySent = 'انبعت الرد';
+  static const String specialistWhatsapp = 'واتساب المختصة';
+  static const String specialistWhatsappHint =
+      'الرقم اللي بيتواصل عليه الزبائن من صفحة المستحضرات ومن زر «استشيري المختصة» على المنتجات اللي بدها استشارة. مع رمز الدولة، بدون صفر بالأول.';
+  static const String specialistWhatsappInvalid = 'رقم غير صحيح — مثال: 963912345678';
 }

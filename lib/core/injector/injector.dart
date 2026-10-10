@@ -16,7 +16,6 @@ import '../../features/categories/data/repository/categories_repository.dart';
 import '../../features/categories/data/repository/firebase_admin_categories_repository.dart';
 import '../../features/deals/data/repositories/deals_admin_repository.dart';
 import '../../features/deals/data/repositories/firebase_admin_deals_repository.dart';
-import '../../features/fitness/data/repository/fake_fitness_repository.dart';
 import '../../features/fitness/data/repository/firebase_admin_fitness_repository.dart';
 import '../../features/fitness/data/repository/fitness_repository.dart';
 import '../../features/home_banners/data/repository/firebase_admin_promo_banners_repository.dart';
@@ -104,7 +103,7 @@ void setupInjector() {
   );
 
   // ===== Fake (لسا ما فيهم Firestore collections) =====
-  getIt.registerLazySingleton<FitnessRepository>(() => FirebaseAdminFitnessRepository(db));
+  getIt.registerLazySingleton<FitnessRepository>(() => FirebaseAdminFitnessRepository(db, getIt<CustomerMessages>()));
   getIt.registerLazySingleton<LoyaltyRepository>(() => FirebaseAdminLoyaltyRepository(db));
   getIt.registerLazySingleton<PresetsRepository>(() => FirebaseAdminPresetsRepository(db));
   // ===== Analytics (يعتمد على باقي الـ repositories) =====

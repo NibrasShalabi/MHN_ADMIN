@@ -28,6 +28,7 @@ class TemplateEditor extends StatefulWidget {
     MessageVar.product: 'سماعة بلوتوث',
     MessageVar.note: 'ملاحظة من الأدمن',
     MessageVar.reply: 'أهلاً، تم حل المشكلة.',
+    MessageVar.program: 'يوجا',
   };
 
   @override

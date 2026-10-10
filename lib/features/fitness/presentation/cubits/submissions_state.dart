@@ -15,6 +15,8 @@ class SubmissionsState extends Equatable {
     this.errorMessage,
   });
 
+  int get newCount => submissions.where((s) => s.status == SubmissionStatus.pending).length;
+
   SubmissionsState copyWith({
     SubmissionsStatus? status,
     List<FitnessSubmission>? submissions,

@@ -32,11 +32,16 @@ class ProductFormPage extends StatefulWidget {
   /// page pops with the saved product so the deal can use it.
   final bool dealOnly;
 
+  /// Opened from the fitness section: only its categories are offered, and
+  /// new products start as consult-only (shown, not orderable).
+  final CategoryScope? scope;
+
   const ProductFormPage({
     super.key,
     this.product,
     this.pricingMode = ProductPricing.money,
     this.dealOnly = false,
+    this.scope,
   });
 
   @override
@@ -107,7 +112,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     );
     _images = [...?p?.images];
     _isNew = p?.isNew ?? false;
-    _isOrderable = p?.isOrderable ?? true;
+    _isOrderable = p?.isOrderable ?? widget.scope != CategoryScope.fitness;
     _sizeSet = p?.sizeSet;
     _sizes = {...?p?.sizes};
     _colorIds = {...?p?.colorIds};
@@ -336,7 +341,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           future: _categoriesFuture,
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) return const CircularProgressIndicator();
-                            final categories = snapshot.data!;
+                            final categories = [
+                              for (final c in snapshot.data!)
+                                if (widget.scope == null || c.scope == widget.scope) c,
+                            ];
                             final selected = categories.where((c) => c.id == _categoryId).firstOrNull;
                             final filters = selected?.filters ?? const <ProductFilter>[];
                             return Column(
