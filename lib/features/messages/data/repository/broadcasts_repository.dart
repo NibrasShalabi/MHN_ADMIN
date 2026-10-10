@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/broadcast.dart';
 
-/// Messages to every customer. The client app reads the latest 50, so the
-/// admin list shows the same window.
+/// Messages to every customer. A customer sees the ones sent after she
+/// joined, plus those marked [Broadcast.forNewCustomers].
 class BroadcastsRepository {
   static const int limit = 50;
 
@@ -26,16 +26,21 @@ class BroadcastsRepository {
           title: d.data()['title'] as String? ?? '',
           body: d.data()['body'] as String? ?? '',
           sentAt: (d.data()['sentAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          forNewCustomers: d.data()['forNewCustomers'] == true,
         ),
     ];
   }
 
-  Future<void> send({required String title, required String body}) => _messages.add({
+  Future<void> send({required String title, required String body, bool forNewCustomers = false}) =>
+      _messages.add({
         'type': 'broadcast',
         'title': title.trim(),
         'body': body.trim(),
         'sentAt': FieldValue.serverTimestamp(),
+        'forNewCustomers': forNewCustomers,
       });
+
+  Future<void> setForNewCustomers(String id, bool on) => _messages.doc(id).update({'forNewCustomers': on});
 
   Future<void> delete(String id) => _messages.doc(id).delete();
 }

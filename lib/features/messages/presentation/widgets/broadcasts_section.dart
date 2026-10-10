@@ -31,6 +31,7 @@ class _BroadcastsSectionState extends State<BroadcastsSection> {
   final _body = TextEditingController();
   late Future<List<Broadcast>> _sent = _repo.recent();
   bool _sending = false;
+  bool _forNew = false;
 
   @override
   void dispose() {
@@ -48,9 +49,10 @@ class _BroadcastsSectionState extends State<BroadcastsSection> {
       content: MessagePreview(title: title, body: body),
     );
     if (!ok) return;
-    await _run(() => _repo.send(title: title, body: body), AdminStrings.broadcastSent, onDone: () {
+    await _run(() => _repo.send(title: title, body: body, forNewCustomers: _forNew), AdminStrings.broadcastSent, onDone: () {
       _title.clear();
       _body.clear();
+      _forNew = false;
     });
   }
 
@@ -92,6 +94,7 @@ class _BroadcastsSectionState extends State<BroadcastsSection> {
               AdminTextInput(controller: _title, hint: AdminStrings.broadcastTitleHint, onChanged: (_) => setState(() {})),
               const SizedBox(height: AdminConstants.spacingSm),
               AdminTextInput(controller: _body, hint: AdminStrings.broadcastBodyHint, maxLines: 4, onChanged: (_) => setState(() {})),
+              _ForNewSwitch(value: _forNew, onChanged: (v) => setState(() => _forNew = v)),
               const SizedBox(height: AdminConstants.spacingMd),
               Align(
                 alignment: AlignmentDirectional.centerEnd,
@@ -128,6 +131,12 @@ class _BroadcastsSectionState extends State<BroadcastsSection> {
                         onPressed: _sending ? null : () => _delete(b),
                       ),
                     ),
+                    _ForNewSwitch(
+                      value: b.forNewCustomers,
+                      onChanged: _sending
+                          ? null
+                          : (v) => _run(() => _repo.setForNewCustomers(b.id, v), AdminStrings.saved),
+                    ),
                     const SizedBox(height: AdminConstants.spacingMd),
                   ],
                 ],
@@ -135,6 +144,26 @@ class _BroadcastsSectionState extends State<BroadcastsSection> {
             },
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// "Show to customers who join later" — for lasting notices like a welcome
+/// or the return policy.
+class _ForNewSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const _ForNewSwitch({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Switch(value: value, activeThumbColor: AdminColors.gold, onChanged: onChanged),
+        const SizedBox(width: AdminConstants.spacingSm),
+        Expanded(child: Text(AdminStrings.broadcastForNew, style: AdminTextStyles.caption)),
       ],
     );
   }
