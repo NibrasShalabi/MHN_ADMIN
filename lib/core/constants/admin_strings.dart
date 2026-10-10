@@ -294,7 +294,6 @@ class AdminStrings {
   static const String paymentRejected = 'مرفوض';
   static const String markPaymentVerified = 'تأكيد استلام الدفع';
   static const String markPaymentRejected = 'رفض الدفع';
-  static const String rejectReason = 'سبب الرفض';
   static const String rejectReasonNote = 'تفاصيل إضافية للعميل (اختياري)';
   static const List<String> rejectReasonPresets = [
     'المبلغ المحوَّل ناقص',
