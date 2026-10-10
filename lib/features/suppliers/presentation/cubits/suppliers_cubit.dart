@@ -1,5 +1,4 @@
 import '../../../../core/bloc/safe_cubit.dart';
-
 import '../../data/repository/suppliers_repository.dart';
 import '../../domain/entities/supplier.dart';
 import 'suppliers_state.dart';
@@ -19,18 +18,18 @@ class SuppliersCubit extends SafeCubit<SuppliersState> {
     }
   }
 
-  Future<void> addSupplier(Supplier supplier) async {
-    await _repository.addSupplier(supplier);
-    await load();
-  }
+  Future<bool> addSupplier(Supplier supplier) => _write(() => _repository.addSupplier(supplier));
+  Future<bool> updateSupplier(Supplier supplier) => _write(() => _repository.updateSupplier(supplier));
+  Future<bool> deleteSupplier(String id) => _write(() => _repository.deleteSupplier(id));
 
-  Future<void> updateSupplier(Supplier supplier) async {
-    await _repository.updateSupplier(supplier);
-    await load();
-  }
-
-  Future<void> deleteSupplier(String id) async {
-    await _repository.deleteSupplier(id);
-    await load();
+  Future<bool> _write(Future<void> Function() action) async {
+    try {
+      await action();
+      await load();
+      return true;
+    } catch (e) {
+      emit(state.copyWith(errorMessage: e.toString()));
+      return false;
+    }
   }
 }

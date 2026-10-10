@@ -36,12 +36,16 @@ class ProductFormPage extends StatefulWidget {
   /// new products start as consult-only (shown, not orderable).
   final CategoryScope? scope;
 
+  /// Opened from a supplier's page: only that supplier's categories.
+  final String? supplierId;
+
   const ProductFormPage({
     super.key,
     this.product,
     this.pricingMode = ProductPricing.money,
     this.dealOnly = false,
     this.scope,
+    this.supplierId,
   });
 
   @override
@@ -198,6 +202,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
     return scope == CategoryScope.loyalty ? ProductPricing.points : ProductPricing.money;
   }
 
+  /// The categories this form may file the product under.
+  bool _offers(Category c) => switch ((widget.supplierId, widget.scope)) {
+        (final id?, _) => c.supplierId == id,
+        (null, final scope?) => c.scope == scope,
+        _ => c.scope == CategoryScope.store,
+      };
+
   /// 12 → "12", 9.5 → "9.5" — prices are dollars, cents must survive an edit.
   static String _plain(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : '$v';
 
@@ -236,7 +247,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
       sizes: _sizes,
       colorIds: _colorIds,
       sizeGuide: _sizeGuide,
-      supplierId: widget.product?.supplierId,
+      // Follows the category, so the app knows whose product it is.
+      supplierId: (await _categoriesFuture).where((c) => c.id == _categoryId).firstOrNull?.supplierId,
       discountPercentage: discountPercentage,
       dealOnly: _isDealOnly,
     );
@@ -343,7 +355,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                             if (!snapshot.hasData) return const CircularProgressIndicator();
                             final categories = [
                               for (final c in snapshot.data!)
-                                if (widget.scope == null || c.scope == widget.scope) c,
+                                if (_offers(c)) c,
                             ];
                             final selected = categories.where((c) => c.id == _categoryId).firstOrNull;
                             final filters = selected?.filters ?? const <ProductFilter>[];

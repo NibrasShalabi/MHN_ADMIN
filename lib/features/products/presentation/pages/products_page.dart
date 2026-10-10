@@ -23,14 +23,17 @@ class ProductsPage extends StatelessWidget {
   /// fitness-scoped categories.
   final CategoryScope? scope;
 
-  const ProductsPage({super.key, this.pricingMode = ProductPricing.money, this.scope});
+  /// Set from a supplier's page: only that supplier's products.
+  final String? supplierId;
+
+  const ProductsPage({super.key, this.pricingMode = ProductPricing.money, this.scope, this.supplierId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => ProductsCubit(GetIt.instance<ProductsRepository>())..loadProducts(),
 
-      child: _ProductsView(pricingMode: pricingMode, scope: scope),
+      child: _ProductsView(pricingMode: pricingMode, scope: scope, supplierId: supplierId),
     );
   }
 }
@@ -38,8 +41,9 @@ class ProductsPage extends StatelessWidget {
 class _ProductsView extends StatefulWidget {
   final ProductPricing pricingMode;
   final CategoryScope? scope;
+  final String? supplierId;
 
-  const _ProductsView({required this.pricingMode, this.scope});
+  const _ProductsView({required this.pricingMode, this.scope, this.supplierId});
 
   @override
   State<_ProductsView> createState() => _ProductsViewState();
@@ -49,15 +53,21 @@ class _ProductsViewState extends State<_ProductsView> {
   final _searchController = TextEditingController();
   String _query = '';
 
-  /// Every section lists only its own products: fitness its fitness
-  /// categories, the store everything but fitness, loyalty its points gifts.
+  /// Every section lists only its own products: a supplier its categories,
+  /// fitness its fitness categories, the store everything else, loyalty its
+  /// points gifts.
   late final Future<bool Function(Product)> _belongs = GetIt.instance<CategoriesRepository>().getCategories().then((all) {
-    final fitness = {for (final c in all) if (c.scope == CategoryScope.fitness) c.id};
-    final scoped = {for (final c in all) if (c.scope == widget.scope) c.id};
-    return (Product p) => switch (widget.scope) {
-          null => !fitness.contains(p.category),
-          _ => scoped.contains(p.category),
-        };
+    final elsewhere = {
+      for (final c in all)
+        if (c.scope == CategoryScope.fitness || c.scope == CategoryScope.supplier) c.id,
+    };
+    final scoped = {
+      for (final c in all)
+        if (widget.supplierId != null ? c.supplierId == widget.supplierId : c.scope == widget.scope) c.id,
+    };
+    return (Product p) => widget.supplierId == null && widget.scope == null
+        ? !elsewhere.contains(p.category)
+        : scoped.contains(p.category);
   });
 
   @override
@@ -72,7 +82,12 @@ class _ProductsViewState extends State<_ProductsView> {
         builder: (_) => BlocProvider.value(
           value: cubit,
 
-          child: ProductFormPage(product: product, pricingMode: widget.pricingMode, scope: widget.scope),
+          child: ProductFormPage(
+            product: product,
+            pricingMode: widget.pricingMode,
+            scope: widget.scope,
+            supplierId: widget.supplierId,
+          ),
         ),
       ),
     );

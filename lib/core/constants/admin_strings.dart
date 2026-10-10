@@ -517,4 +517,15 @@ class AdminStrings {
   static const String editQuestions = 'تعديل الأسئلة';
   static const String legacyPrograms = 'برامج قديمة';
   static const String legacyProgramsHint = 'انعملت قبل تثبيت الأقسام الأربعة وما بتطلع بالتطبيق — احذفيها.';
+
+  // ===== Suppliers =====
+  static const String supplierInfo = 'معلومات المتجر';
+  static const String supplierPhone = 'رقم المورد (واتساب)';
+  static const String supplierPhoneHint = 'الزبائن بيطلبوا منه عليه مباشرة. مع رمز الدولة، بدون صفر بالأول.';
+  static const String supplierAddress = 'عنوان المحل';
+  static const String supplierAddressHint = 'المحافظة، المنطقة، الشارع';
+  static const String supplierMaps = 'رابط الموقع على الخريطة';
+  static const String supplierMapsHint = 'من Google Maps: شارك ← نسخ الرابط';
+  static const String supplierMapsInvalid = 'الرابط لازم يبلش بـ https://';
+  static const String supplierActive = 'المتجر ظاهر بالتطبيق';
 }

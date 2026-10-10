@@ -18,7 +18,10 @@ class CategoryFormPanel extends StatefulWidget {
   final Category? category;
   final CategoriesCubit cubit;
 
-  const CategoryFormPanel({super.key, this.category, required this.cubit});
+  /// Opened from a supplier's page: the category belongs to that supplier.
+  final String? supplierId;
+
+  const CategoryFormPanel({super.key, this.category, required this.cubit, this.supplierId});
 
   @override
   State<CategoryFormPanel> createState() => _CategoryFormPanelState();
@@ -40,9 +43,9 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
     final c = widget.category;
     _nameController = TextEditingController(text: c?.name ?? '');
     _filterNameController = TextEditingController();
-    _scope = c?.scope ?? CategoryScope.store;
+    _scope = widget.supplierId != null ? CategoryScope.supplier : c?.scope ?? CategoryScope.store;
     _filters = [...?c?.filters];
-    _supplierId = c?.supplierId;
+    _supplierId = widget.supplierId ?? c?.supplierId;
     _suppliersFuture = GetIt.instance<SuppliersRepository>().getSuppliers();
   }
 
@@ -91,7 +94,7 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
           isRequired: true,
           child: AdminTextInput(controller: _nameController),
         ),
-        AdminField(
+        if (widget.supplierId == null) AdminField(
           label: AdminStrings.categoryScope,
           child: AdminOptionChips<CategoryScope>(
             options: CategoryScope.values,
@@ -101,7 +104,7 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
             onChanged: (s) => setState(() => _scope = s ?? _scope),
           ),
         ),
-        if (_scope == CategoryScope.supplier)
+        if (_scope == CategoryScope.supplier && widget.supplierId == null)
           AdminField(
             label: AdminStrings.productSupplier,
             isRequired: true,

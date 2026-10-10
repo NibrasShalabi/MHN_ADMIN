@@ -16,25 +16,30 @@ import '../cubits/categories_state.dart';
 import '../widgets/category_form_panel.dart';
 
 class CategoriesPage extends StatelessWidget {
-  const CategoriesPage({super.key});
+  /// Set from a supplier's page: lists and creates only that supplier's categories.
+  final String? supplierId;
+
+  const CategoriesPage({super.key, this.supplierId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => CategoriesCubit(GetIt.instance<CategoriesRepository>())..loadCategories(),
-      child: const _CategoriesView(),
+      child: _CategoriesView(supplierId: supplierId),
     );
   }
 }
 
 class _CategoriesView extends StatelessWidget {
-  const _CategoriesView();
+  final String? supplierId;
+
+  const _CategoriesView({this.supplierId});
 
   void _openForm(BuildContext context, CategoriesCubit cubit, {Category? category}) {
     showAdminSidePanel(
       context,
       title: category == null ? AdminStrings.addCategory : AdminStrings.editCategory,
-      child: CategoryFormPanel(category: category, cubit: cubit),
+      child: CategoryFormPanel(category: category, cubit: cubit, supplierId: supplierId),
     );
   }
 
@@ -112,7 +117,9 @@ class _CategoriesView extends StatelessWidget {
               );
             }
 
-            final categories = state.categories;
+            final categories = supplierId == null
+                ? state.categories
+                : state.categories.where((c) => c.supplierId == supplierId).toList();
             final cubit = context.read<CategoriesCubit>();
 
             return AdminDataTable(

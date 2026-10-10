@@ -8,33 +8,33 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
 
   FirebaseAdminSuppliersRepository(this._db);
 
+  CollectionReference<Map<String, dynamic>> get _suppliers => _db.collection('suppliers');
+
   @override
   Future<List<Supplier>> getSuppliers() async {
-    final snap = await _db.collection('suppliers').get();
+    final snap = await _suppliers.get();
     return snap.docs.map(_fromDoc).toList();
   }
 
   @override
-  Future<void> addSupplier(Supplier supplier) async {
-    await _db.collection('suppliers').doc(supplier.id).set({
-      'name': supplier.name,
-      'description': supplier.description,
-      'logoUrl': null, // لاحقاً بعد Storage
-    });
-  }
+  Future<void> addSupplier(Supplier supplier) =>
+      _suppliers.doc(supplier.id).set({..._toMap(supplier), 'logoUrl': null, 'createdAt': FieldValue.serverTimestamp()});
+
+  /// Merge keeps fields this form doesn't own (logoUrl, ownerUid).
+  @override
+  Future<void> updateSupplier(Supplier supplier) => _suppliers.doc(supplier.id).set(_toMap(supplier), SetOptions(merge: true));
 
   @override
-  Future<void> updateSupplier(Supplier supplier) async {
-    await _db.collection('suppliers').doc(supplier.id).update({
-      'name': supplier.name,
-      'description': supplier.description,
-    });
-  }
+  Future<void> deleteSupplier(String id) => _suppliers.doc(id).delete();
 
-  @override
-  Future<void> deleteSupplier(String id) async {
-    await _db.collection('suppliers').doc(id).delete();
-  }
+  Map<String, dynamic> _toMap(Supplier s) => {
+        'name': s.name,
+        'description': s.description,
+        'phone': s.phone,
+        'address': s.address,
+        'mapsUrl': s.mapsUrl,
+        'isActive': s.isActive,
+      };
 
   Supplier _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
@@ -42,7 +42,11 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
       id: doc.id,
       name: d['name'] as String? ?? '',
       description: d['description'] as String? ?? '',
-      // logoBytes: null — الصور من Storage لاحقاً
+      phone: d['phone'] as String? ?? '',
+      address: d['address'] as String? ?? '',
+      mapsUrl: d['mapsUrl'] as String? ?? '',
+      isActive: d['isActive'] as bool? ?? true,
+      ownerUid: d['ownerUid'] as String?,
     );
   }
 }

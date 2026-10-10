@@ -9,11 +9,13 @@ import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_data_table.dart';
 import '../../../../core/widgets/admin_side_panel.dart';
+import '../../../../core/widgets/admin_status_chip.dart';
 import '../../data/repository/suppliers_repository.dart';
 import '../../domain/entities/supplier.dart';
 import '../cubits/suppliers_cubit.dart';
 import '../cubits/suppliers_state.dart';
 import '../widgets/supplier_form_panel.dart';
+import 'supplier_detail_page.dart';
 
 class SuppliersPage extends StatelessWidget {
   const SuppliersPage({super.key});
@@ -30,11 +32,13 @@ class SuppliersPage extends StatelessWidget {
 class _SuppliersView extends StatelessWidget {
   const _SuppliersView();
 
-  void _openForm(BuildContext context, SuppliersCubit cubit, {Supplier? supplier}) {
+  void _add(BuildContext context, SuppliersCubit cubit) {
     showAdminSidePanel(
       context,
-      title: supplier == null ? AdminStrings.addSupplier : AdminStrings.editSupplier,
-      child: SupplierFormPanel(supplier: supplier, cubit: cubit),
+      title: AdminStrings.addSupplier,
+      child: Builder(
+        builder: (panel) => SupplierFormPanel(cubit: cubit, onSaved: () => Navigator.of(panel).pop()),
+      ),
     );
   }
 
@@ -91,7 +95,7 @@ class _SuppliersView extends StatelessWidget {
               builder: (context) => AdminButton(
                 label: AdminStrings.addSupplier,
                 icon: Icons.add,
-                onPressed: () => _openForm(context, context.read<SuppliersCubit>()),
+                onPressed: () => _add(context, context.read<SuppliersCubit>()),
               ),
             ),
           ],
@@ -119,7 +123,8 @@ class _SuppliersView extends StatelessWidget {
               columns: const [
                 AdminColumn('', flex: 1),
                 AdminColumn(AdminStrings.supplierName, flex: 3),
-                AdminColumn(AdminStrings.supplierDescription, flex: 4),
+                AdminColumn(AdminStrings.supplierPhone, flex: 2),
+                AdminColumn(AdminStrings.submissionStatus, flex: 1),
                 AdminColumn('', flex: 1),
               ],
               cellsBuilder: (index) {
@@ -146,11 +151,10 @@ class _SuppliersView extends StatelessWidget {
                     ),
                   ),
                   Text(supplier.name, style: AdminTextStyles.caption),
-                  Text(
-                    supplier.description,
-                    style: AdminTextStyles.caption,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Text(supplier.phone.isEmpty ? '—' : supplier.phone, style: AdminTextStyles.caption),
+                  AdminStatusChip(
+                    label: supplier.isActive ? AdminStrings.sectionLive : AdminStrings.methodOff,
+                    color: supplier.isActive ? AdminColors.success : AdminColors.textDisabled,
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18, color: AdminColors.danger),
@@ -158,7 +162,7 @@ class _SuppliersView extends StatelessWidget {
                   ),
                 ];
               },
-              onRowTap: (index) => _openForm(context, cubit, supplier: suppliers[index]),
+              onRowTap: (index) => openSupplier(context, suppliers[index].id),
             );
           },
         ),
