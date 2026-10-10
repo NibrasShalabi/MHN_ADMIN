@@ -17,6 +17,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   Future<List<Product>> getProducts() async {
     final snap = await _db.collection('products').get();
     await _migrateLegacyCostPrices(snap.docs);
+    await _migrateLegacyColors(snap.docs);
     return snap.docs.map(_fromDoc).toList();
   }
 
@@ -112,7 +113,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     // قراءة colors → colorIds (Admin format)
     final colorsList = d['colors'] as List? ?? [];
     final colorIds = Set<String>.from(
-      colorsList.map((c) => (c as Map)['name'] as String? ?? ''),
+      colorsList.map((c) => (c as Map)['id'] as String? ?? c['name'] as String? ?? ''),
     );
 
     // قراءة sizeGuide
@@ -153,16 +154,40 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     );
   }
 
+  static final Map<String, PaletteColor> _palette = {for (final c in DefaultPresets.all.colors) c.id: c};
+
+  /// What the app shows: the Arabic name and the real swatch, plus the id
+  /// the dashboard edits by.
+  static List<Map<String, dynamic>> _colorsToMap(Iterable<String> ids) => [
+        for (final id in ids)
+          {'id': id, 'name': _palette[id]?.name ?? id, 'value': _palette[id]?.value ?? 0xFF8A8A8A},
+      ];
+
+  /// One-time, self-healing: older products stored the colour id as its
+  /// name with a black swatch. Rewrites them the first time the list loads.
+  Future<void> _migrateLegacyColors(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    final legacy = [
+      for (final d in docs)
+        if ((d.data()['colors'] as List? ?? const []).any((c) => (c as Map)['id'] == null)) d,
+    ];
+    for (var i = 0; i < legacy.length; i += 400) {
+      final batch = _db.batch();
+      for (final doc in legacy.skip(i).take(400)) {
+        final ids = (doc.data()['colors'] as List).map((c) => (c as Map)['name'] as String? ?? '');
+        batch.update(doc.reference, {'colors': _colorsToMap(ids)});
+      }
+      CatalogVersion.bump(_db, batch);
+      await batch.commit();
+    }
+  }
+
   Map<String, dynamic> _toMap(Product product) {
     final clothingSizes = product.sizes
         .map((s) => s.toLowerCase())
         .where((s) => ['xs', 's', 'm', 'l', 'xl', 'xxl'].contains(s))
         .toList();
 
-    final colors = product.colorIds.map((id) => {
-      'name': id,
-      'value': 0xFF000000,
-    }).toList();
+    final colors = _colorsToMap(product.colorIds);
 
     return {
       'name': product.name,
