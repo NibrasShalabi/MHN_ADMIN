@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/data/catalog_version.dart';
 import '../../domain/entities/supplier.dart';
 import 'suppliers_repository.dart';
 
@@ -17,15 +18,18 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
   }
 
   @override
-  Future<void> addSupplier(Supplier supplier) =>
-      _suppliers.doc(supplier.id).set({..._toMap(supplier), 'logoUrl': null, 'createdAt': FieldValue.serverTimestamp()});
+  Future<void> addSupplier(Supplier supplier) => CatalogVersion.commit(
+      _db,
+      (b) => b.set(
+          _suppliers.doc(supplier.id), {..._toMap(supplier), 'logoUrl': null, 'createdAt': FieldValue.serverTimestamp()}));
 
   /// Merge keeps fields this form doesn't own (logoUrl, ownerUid).
   @override
-  Future<void> updateSupplier(Supplier supplier) => _suppliers.doc(supplier.id).set(_toMap(supplier), SetOptions(merge: true));
+  Future<void> updateSupplier(Supplier supplier) =>
+      CatalogVersion.commit(_db, (b) => b.set(_suppliers.doc(supplier.id), _toMap(supplier), SetOptions(merge: true)));
 
   @override
-  Future<void> deleteSupplier(String id) => _suppliers.doc(id).delete();
+  Future<void> deleteSupplier(String id) => CatalogVersion.commit(_db, (b) => b.delete(_suppliers.doc(id)));
 
   Map<String, dynamic> _toMap(Supplier s) => {
         'name': s.name,

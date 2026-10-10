@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/data/catalog_version.dart';
 import '../../domain/entities/promo_banner.dart';
 import 'promo_banners_repository.dart';
 
@@ -21,25 +22,25 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
 
   @override
   Future<void> addBanner(PromoBanner banner) async {
-    await _db.collection('banners').doc(banner.id).set({
-      'title': banner.title,
-      'order': banner.order,
-      'imageUrl': null, // لاحقاً بعد Storage
-      'isActive': true,
-    });
+    await CatalogVersion.commit(_db, (b) => b.set(_db.collection('banners').doc(banner.id), {
+          'title': banner.title,
+          'order': banner.order,
+          'imageUrl': null, // لاحقاً بعد Storage
+          'isActive': true,
+        }));
   }
 
   @override
   Future<void> updateBanner(PromoBanner banner) async {
-    await _db.collection('banners').doc(banner.id).update({
-      'title': banner.title,
-      'order': banner.order,
-    });
+    await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(banner.id), {
+          'title': banner.title,
+          'order': banner.order,
+        }));
   }
 
   @override
   Future<void> deleteBanner(String id) async {
-    await _db.collection('banners').doc(id).update({'isActive': false});
+    await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(id), {'isActive': false}));
   }
 
   PromoBanner _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {

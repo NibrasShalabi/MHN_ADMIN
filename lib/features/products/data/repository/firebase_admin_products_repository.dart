@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/data/catalog_version.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/product_private.dart';
 import '../../../presets/domain/entities/presets.dart';
@@ -40,6 +41,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
         'createdAt': FieldValue.serverTimestamp(),
       })
       ..set(_db.collection(_private).doc(product.id), _privateToMap(private));
+    CatalogVersion.bump(_db, batch);
     await batch.commit();
   }
 
@@ -53,6 +55,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
         'costPrice': FieldValue.delete(),
       })
       ..set(_db.collection(_private).doc(product.id), _privateToMap(private), SetOptions(merge: true));
+    CatalogVersion.bump(_db, batch);
     await batch.commit();
   }
 
@@ -61,6 +64,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     final batch = _db.batch()
       ..delete(_db.collection('products').doc(id))
       ..delete(_db.collection(_private).doc(id));
+    CatalogVersion.bump(_db, batch);
     await batch.commit();
   }
 

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/data/catalog_version.dart';
 import '../../domain/entities/category.dart';
 import 'categories_repository.dart';
 
@@ -16,17 +17,17 @@ class FirebaseAdminCategoriesRepository implements CategoriesRepository {
 
   @override
   Future<void> addCategory(Category category) async {
-    await _db.collection('categories').doc(category.id).set(_toMap(category));
+    await CatalogVersion.commit(_db, (b) => b.set(_db.collection('categories').doc(category.id), _toMap(category)));
   }
 
   @override
   Future<void> updateCategory(Category category) async {
-    await _db.collection('categories').doc(category.id).update(_toMap(category));
+    await CatalogVersion.commit(_db, (b) => b.update(_db.collection('categories').doc(category.id), _toMap(category)));
   }
 
   @override
   Future<void> deleteCategory(String id) async {
-    await _db.collection('categories').doc(id).delete();
+    await CatalogVersion.commit(_db, (b) => b.delete(_db.collection('categories').doc(id)));
   }
 
   // ===== Mappers =====
