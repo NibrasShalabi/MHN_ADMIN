@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../messages/data/repository/customer_messages.dart';
+import '../../../messages/domain/entities/message_event.dart';
 import '../../domain/entities/support_message.dart';
 import 'support_repository.dart';
 
@@ -8,8 +10,9 @@ class FirebaseAdminSupportRepository implements SupportRepository {
   static const int _whereInLimit = 30;
 
   final FirebaseFirestore _db;
+  final CustomerMessages _messages;
 
-  FirebaseAdminSupportRepository(this._db);
+  FirebaseAdminSupportRepository(this._db, this._messages);
 
   @override
   Future<List<SupportMessage>> getMessages() async {
@@ -37,14 +40,11 @@ class FirebaseAdminSupportRepository implements SupportRepository {
       });
 
     if (reply != null) {
-      batch.set(_db.collection('admin_messages').doc(), {
-        'type': 'support_reply',
-        'userId': message.userId,
-        'supportMessageId': message.id,
-        'body': reply,
-        'isRead': false,
-        'sentAt': FieldValue.serverTimestamp(),
-      });
+      await _messages.templates();
+      // A typed reply always reaches the customer, even with the template off.
+      final sent = _messages.compose(MessageEvent.supportReply,
+          userId: message.userId, linkId: message.id, values: {MessageVar.reply: reply}, force: true);
+      if (sent != null) batch.set(sent.ref, sent.data);
     }
 
     await batch.commit();

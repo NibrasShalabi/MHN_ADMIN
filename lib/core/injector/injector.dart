@@ -1,3 +1,5 @@
+import '../../features/messages/data/repository/broadcasts_repository.dart';
+import '../../features/messages/data/repository/customer_messages.dart';
 import '../../features/payments/data/repository/payment_settings_repository.dart';
 import '../../features/shipping/data/repository/shipping_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -53,6 +55,10 @@ void setupInjector() {
         () => FirebaseAdminAuthRepository(auth),
   );
 
+  // ===== Customer messages (used by orders, suggestions, support) =====
+  getIt.registerLazySingleton(() => CustomerMessages(db));
+  getIt.registerLazySingleton(() => BroadcastsRepository(db));
+
   // ===== Products =====
   getIt.registerLazySingleton<ProductsRepository>(
         () => FirebaseAdminProductsRepository(db),
@@ -69,7 +75,7 @@ void setupInjector() {
 
   // ===== Orders =====
   getIt.registerLazySingleton<OrdersRepository>(
-        () => FirebaseAdminOrdersRepository(db),
+        () => FirebaseAdminOrdersRepository(db, getIt<CustomerMessages>()),
   );
 
   // ===== Deals =====
@@ -84,12 +90,12 @@ void setupInjector() {
 
   // ===== Suggestions =====
   getIt.registerLazySingleton<SuggestionsRepository>(
-        () => FirebaseAdminSuggestionsRepository(db),
+        () => FirebaseAdminSuggestionsRepository(db, getIt<CustomerMessages>()),
   );
 
   // ===== Support =====
   getIt.registerLazySingleton<SupportRepository>(
-        () => FirebaseAdminSupportRepository(db),
+        () => FirebaseAdminSupportRepository(db, getIt<CustomerMessages>()),
   );
 
   // ===== Promo Banners =====

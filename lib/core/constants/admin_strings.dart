@@ -458,18 +458,31 @@ class AdminStrings {
   static const String viewAll = 'عرض الكل';
   static const String selectCategory = 'اختر قسماً';
 
+  // ===== Login =====
+  static const String loginEmptyFields = 'أدخل البريد وكلمة المرور';
+  static const String loginInvalid = 'بيانات الدخول غير صحيحة';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+  // ===== Customer messages =====
+  static const String navMessages = 'الرسائل';
+  static const String broadcastTitle = 'رسالة لكل الزبائن';
+  static const String broadcastHint = 'بتوصل لكل مستخدمي التطبيق بصفحة الرسائل.';
+  static const String broadcastTitleHint = 'العنوان (اختياري)';
+  static const String broadcastBodyHint = 'نص الرسالة';
+  static const String broadcastSend = 'إرسال للكل';
+  static const String broadcastSent = 'انبعتت الرسالة';
+  static const String broadcastConfirm = 'إرسال لكل الزبائن؟';
+  static const String broadcastConfirmHint = 'الرسالة رح تطلع لكل المستخدمين فوراً.';
+  static const String broadcastHistory = 'الرسائل العامة المرسلة';
+  static const String broadcastEmpty = 'ما في رسائل عامة بعد';
+  static const String broadcastDeleteConfirm = 'حذف الرسالة؟ رح تختفي من تطبيق كل الزبائن.';
+  static const String templatesTitle = 'الرسائل التلقائية';
+  static const String templatesHint =
+      'بتنبعت للعميل تلقائياً مع كل حدث. اضغط على متغيّر لتضيفه. أي سطر فيه متغيّر فاضي بينحذف لحاله.';
+  static const String templateTitleLabel = 'العنوان';
+  static const String templateBodyLabel = 'النص';
+  static const String templateReset = 'استرجاع النص الأصلي';
+  static const String templatePreview = 'معاينة';
+  static const String templateOn = 'تنبعت';
+  static const String templateOff = 'موقّفة';
+  static String templateMissingVar(String token) => 'النص لازم يحتوي $token';
 }

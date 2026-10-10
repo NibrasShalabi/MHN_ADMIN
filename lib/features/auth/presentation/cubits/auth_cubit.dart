@@ -1,4 +1,5 @@
 import '../../../../core/bloc/safe_cubit.dart';
+import '../../../../core/constants/admin_strings.dart';
 
 import '../../data/repository/auth_repository.dart';
 import 'auth_state.dart';
@@ -12,13 +13,13 @@ class AuthCubit extends SafeCubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
 
     if (email.trim().isEmpty || password.isEmpty) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'ط£ط¯ط®ظ„ ط§ظ„ط¨ط±ظٹط¯ ظˆظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: AdminStrings.loginEmptyFields));
       return;
     }
 
     final success = await _repository.login(email, password);
     emit(success
         ? state.copyWith(status: AuthStatus.success)
-        : state.copyWith(status: AuthStatus.failure, errorMessage: 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ط®ظˆظ„ ط؛ظٹط± طµط­ظٹط­ط©'));
+        : state.copyWith(status: AuthStatus.failure, errorMessage: AdminStrings.loginInvalid));
   }
 }

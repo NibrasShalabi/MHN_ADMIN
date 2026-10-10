@@ -5,6 +5,8 @@ import '../../domain/entities/insufficient_points_exception.dart';
 import '../../domain/entities/order_batch.dart';
 import '../../domain/entities/order_check.dart';
 import '../../domain/entities/payment_not_verified_exception.dart';
+import '../../../messages/data/repository/customer_messages.dart';
+import '../../../messages/domain/entities/message_event.dart';
 import '../../../shipping/domain/entities/shipping_rates.dart';
 import 'orders_repository.dart';
 
@@ -15,8 +17,9 @@ import 'orders_repository.dart';
 /// لو ما موجودة بالـ order، Admin بيشوف "غير محدد"
 class FirebaseAdminOrdersRepository implements OrdersRepository {
   final FirebaseFirestore _db;
+  final CustomerMessages _messages;
 
-  FirebaseAdminOrdersRepository(this._db);
+  FirebaseAdminOrdersRepository(this._db, this._messages);
 
   // ===== Orders =====
 
@@ -64,6 +67,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         bool notifyCustomer = false,
       }) async {
     final orderRef = _db.collection('orders').doc(orderId);
+    await _messages.templates();
 
     await _db.runTransaction((tx) async {
       // ===== Reads =====
@@ -126,15 +130,20 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       if (reward > 0) _movePoints(tx, userRef!, userId!, reward, id: 'reward_$orderId', orderId: orderId, reason: 'نقاط عملية شراء');
       if (revoking) _movePoints(tx, userRef!, userId!, -awarded, id: 'reward_revoke_$orderId', orderId: orderId, reason: 'إلغاء نقاط طلب ملغى');
 
-      if (notifyCustomer && note != null && userId != null) {
-        tx.set(_db.collection('admin_messages').doc(), {
-          'type': 'order_update',
-          'userId': userId,
-          'orderId': orderId,
-          'body': note,
-          'sentAt': FieldValue.serverTimestamp(),
-          'isRead': false,
-        });
+      // Every real status change tells the customer; the note rides along
+      // only when the admin chose to share it.
+      final event = userId == null || order['status'] == status.name ? null : MessageEvent.forStatus(status);
+      final points = status == OrderStatus.delivered ? reward : (refunding ? deducted : 0);
+      final sharedNote = notifyCustomer ? note : null;
+      if (event != null) {
+        final message = _messages.compose(
+          event,
+          userId: userId!,
+          orderId: orderId,
+          values: {MessageVar.points: points > 0 ? '$points' : '', MessageVar.note: ?sharedNote},
+          force: sharedNote != null,
+        );
+        if (message != null) tx.set(message.ref, message.data);
       }
     });
   }
@@ -184,16 +193,14 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         'paymentStatus': status.name,
         'paymentRejectReason': rejected ? reason : FieldValue.delete(),
       });
-    if (rejected && order.userId != null) {
-      batch.set(_db.collection('admin_messages').doc(), {
-        'type': 'order_update',
-        'userId': order.userId,
-        'orderId': order.id,
-        'title': 'تم رفض الدفع — ${order.id}',
-        'body': reason == null || reason.isEmpty ? 'افتح الطلب وأعد إرسال الدفع.' : '$reason\nافتح الطلب وأعد إرسال الدفع.',
-        'isRead': false,
-        'sentAt': FieldValue.serverTimestamp(),
+
+    final event = order.paymentStatus == status && !rejected ? null : MessageEvent.forPayment(status);
+    if (event != null && order.userId != null) {
+      await _messages.templates();
+      final message = _messages.compose(event, userId: order.userId!, orderId: order.id, values: {
+        MessageVar.reason: ?reason,
       });
+      if (message != null) batch.set(message.ref, message.data);
     }
     await batch.commit();
   }

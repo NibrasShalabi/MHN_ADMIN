@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../messages/data/repository/customer_messages.dart';
+import '../../../messages/domain/entities/message_event.dart';
 import '../../domain/entities/product_suggestion.dart';
 import 'suggestions_repository.dart';
 
@@ -7,8 +9,9 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
   static const int _whereInLimit = 30;
 
   final FirebaseFirestore _db;
+  final CustomerMessages _messages;
 
-  FirebaseAdminSuggestionsRepository(this._db);
+  FirebaseAdminSuggestionsRepository(this._db, this._messages);
 
   CollectionReference<Map<String, dynamic>> get _suggestions => _db.collection('productSuggestions');
 
@@ -51,6 +54,7 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
   @override
   Future<void> approve(String id) async {
     final ref = _suggestions.doc(id);
+    await _messages.templates();
     await _db.runTransaction((tx) async {
       final s = (await tx.get(ref)).data() ?? const <String, dynamic>{};
       final rules = (await tx.get(_db.collection('config').doc('loyaltyRules'))).data() ?? const {};
@@ -71,15 +75,11 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
         });
       }
       if (userId != null && s['status'] != 'approved') {
-        final name = s['productName'] as String? ?? '';
-        tx.set(_db.collection('admin_messages').doc(), {
-          'type': 'suggestion',
-          'userId': userId,
-          'title': 'تم قبول اقتراحك',
-          'body': rewarding ? 'شكراً لاقتراح "$name" — انضافلك $reward نقطة.' : 'شكراً لاقتراح "$name".',
-          'isRead': false,
-          'sentAt': FieldValue.serverTimestamp(),
+        final message = _messages.compose(MessageEvent.suggestionApproved, userId: userId, values: {
+          MessageVar.product: s['productName'] as String? ?? '',
+          MessageVar.points: rewarding ? '$reward' : '',
         });
+        if (message != null) tx.set(message.ref, message.data);
       }
     });
   }
@@ -92,14 +92,12 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
 
     final batch = _db.batch()..update(_suggestions.doc(id), {'status': 'rejected', 'rejectionReason': reason});
     if (userId != null) {
-      batch.set(_db.collection('admin_messages').doc(), {
-        'type': 'suggestion',
-        'userId': userId,
-        'title': 'تم رفض اقتراحك',
-        'body': 'اقتراح "$productName" ما انقبل. السبب: $reason',
-        'sentAt': FieldValue.serverTimestamp(),
-        'isRead': false,
+      await _messages.templates();
+      final message = _messages.compose(MessageEvent.suggestionRejected, userId: userId, values: {
+        MessageVar.product: productName,
+        MessageVar.reason: reason,
       });
+      if (message != null) batch.set(message.ref, message.data);
     }
     await batch.commit();
   }
