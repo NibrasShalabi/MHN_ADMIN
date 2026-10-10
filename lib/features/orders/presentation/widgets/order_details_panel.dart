@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/money.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -149,17 +150,17 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
         const Divider(color: AdminColors.border, height: 1),
         const SizedBox(height: AdminConstants.spacingLg),
         if (order.itemsTotal > 0) ...[
-          _InfoRow(label: AdminStrings.itemsTotal, value: '${currency.format(order.itemsTotal)} ل.س'),
-          _InfoRow(label: AdminStrings.supplyShipping, value: '${currency.format(order.supplyShipping)} ل.س'),
-          _InfoRow(label: AdminStrings.deliveryFee, value: '${currency.format(order.deliveryFee)} ل.س'),
+          _InfoRow(label: AdminStrings.itemsTotal, value: Money.format(order.itemsTotal)),
+          _InfoRow(label: AdminStrings.supplyShipping, value: Money.format(order.supplyShipping)),
+          _InfoRow(label: AdminStrings.deliveryFee, value: Money.format(order.deliveryFee)),
         ],
-        _InfoRow(label: AdminStrings.grandTotal, value: '${currency.format(order.totalPrice)} ل.س'),
+        _InfoRow(label: AdminStrings.grandTotal, value: Money.format(order.totalPrice)),
         if (order.itemsTotal > 0)
           FutureBuilder<OrderCheck>(
             future: _check,
             builder: (context, snap) => switch (snap.data) {
               null => const SizedBox.shrink(),
-              final check => _CheckNote(check: check, total: order.totalPrice, currency: currency),
+              final check => _CheckNote(check: check, total: order.totalPrice),
             },
           ),
         if (order.pointsTotal > 0)
@@ -416,9 +417,8 @@ extension on PaymentStatus {
 class _CheckNote extends StatelessWidget {
   final OrderCheck check;
   final double total;
-  final NumberFormat currency;
 
-  const _CheckNote({required this.check, required this.total, required this.currency});
+  const _CheckNote({required this.check, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -440,7 +440,7 @@ class _CheckNote extends StatelessWidget {
             ],
           ),
           if (!ok) ...[
-            Text(AdminStrings.totalsExpected('${currency.format(check.expectedTotal)} ل.س'), style: AdminTextStyles.caption),
+            Text(AdminStrings.totalsExpected(Money.format(check.expectedTotal)), style: AdminTextStyles.caption),
             Text(AdminStrings.totalsMismatchNote,
                 style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
           ],

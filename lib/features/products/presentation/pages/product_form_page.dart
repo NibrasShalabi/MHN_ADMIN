@@ -28,10 +28,15 @@ class ProductFormPage extends StatefulWidget {
   /// Opened from the loyalty gifts tab → always points.
   final ProductPricing pricingMode;
 
+  /// Opened from Fire deals → New product: no category or discount, and the
+  /// page pops with the saved product so the deal can use it.
+  final bool dealOnly;
+
   const ProductFormPage({
     super.key,
     this.product,
     this.pricingMode = ProductPricing.money,
+    this.dealOnly = false,
   });
 
   @override
@@ -73,18 +78,22 @@ class _ProductFormPageState extends State<ProductFormPage> {
   /// Opened from Loyalty → Gifts: priced in points, no category or discount.
   bool get _isGift => widget.pricingMode == ProductPricing.points;
 
+  /// Category, sub-section and discount belong to regular store products only.
+  bool get _hasCatalogFields => !_isGift && !_isDealOnly;
+  bool get _isDealOnly => widget.dealOnly || (widget.product?.dealOnly ?? false);
+
   @override
   void initState() {
     super.initState();
     final p = widget.product;
     _nameController = TextEditingController(text: p?.name ?? '');
     _priceController = TextEditingController(
-      text: p == null ? '' : p.price.toStringAsFixed(0),
+      text: p == null ? '' : _plain(p.price),
     );
     _costPriceController = TextEditingController();
     _sourceUrlController = TextEditingController();
     _shippingPriceController = TextEditingController(
-      text: p?.shippingPrice == null ? '' : p!.shippingPrice!.toStringAsFixed(0),
+      text: p?.shippingPrice == null ? '' : _plain(p!.shippingPrice!),
     );
     _stockController = TextEditingController(
       text: p == null ? '' : p.stock.toString(),
@@ -140,7 +149,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     }
     if (!mounted) return;
     setState(() {
-      _costPriceController.text = private.costPrice?.toStringAsFixed(0) ?? '';
+      _costPriceController.text = private.costPrice == null ? '' : _plain(private.costPrice!);
       _sourceUrlController.text = private.sourceUrl ?? '';
       _privateLoaded = true;
     });
@@ -184,20 +193,23 @@ class _ProductFormPageState extends State<ProductFormPage> {
     return scope == CategoryScope.loyalty ? ProductPricing.points : ProductPricing.money;
   }
 
+  /// 12 → "12", 9.5 → "9.5" — prices are dollars, cents must survive an edit.
+  static String _plain(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : '$v';
+
   Future<void> _save() async {
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
     final costPrice = double.tryParse(_costPriceController.text.trim());
     final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
-    final discountPercentage = _isGift ? null : double.tryParse(_discountController.text.trim());
+    final discountPercentage = _hasCatalogFields ? double.tryParse(_discountController.text.trim()) : null;
     final pricing = await _pricingForCategory();
     if (!mounted) return;
 
     final product = Product(
       id: widget.product?.id ?? 'P-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
-      category: _isGift ? null : _categoryId,
-      filterId: _isGift ? null : _filterId,
+      category: _hasCatalogFields ? _categoryId : null,
+      filterId: _hasCatalogFields ? _filterId : null,
       pricing: pricing,
       price: price,
       shippingPrice: shippingPrice,
@@ -221,14 +233,17 @@ class _ProductFormPageState extends State<ProductFormPage> {
       sizeGuide: _sizeGuide,
       supplierId: widget.product?.supplierId,
       discountPercentage: discountPercentage,
+      dealOnly: _isDealOnly,
     );
 
     final sourceUrl = _sourceUrlController.text.trim();
     final private = ProductPrivate(costPrice: costPrice, sourceUrl: sourceUrl.isEmpty ? null : sourceUrl);
 
     final cubit = context.read<ProductsCubit>();
-    _isEditing ? cubit.updateProduct(product, private) : cubit.addProduct(product, private);
-    Navigator.of(context).pop();
+    final saving = _isEditing ? cubit.updateProduct(product, private) : cubit.addProduct(product, private);
+    if (!widget.dealOnly) return Navigator.of(context).pop();
+    // The deal is created right after — only hand the product back once it exists.
+    if (await saving && mounted) Navigator.of(context).pop(product);
   }
 
   void _delete() {
@@ -312,8 +327,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         isRequired: true,
                         child: AdminTextInput(controller: _nameController),
                       ),
-                      // Loyalty gifts have no category — they're listed by pricing.
-                      if (!_isGift)
+                      // Gifts and deal-only products have no category — they're
+                      // listed by pricing / by their deal.
+                      if (_hasCatalogFields)
                       AdminField(
                         label: AdminStrings.productCategory,
                         child: FutureBuilder<List<Category>>(
@@ -529,7 +545,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 const SizedBox(height: AdminConstants.spacingLg),
 
                 // ===== الخصم (منتجات المتجر فقط) =====
-                if (!_isGift) ...[
+                if (_hasCatalogFields) ...[
                 AdminCard(
                   title: AdminStrings.productDiscount,
                   child: Column(

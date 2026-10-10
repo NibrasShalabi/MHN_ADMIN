@@ -439,6 +439,15 @@ class AdminStrings {
   static const String productId = 'معرّف المنتج';
   static const String selectProduct = 'اختر منتجاً';
   static const String dealDuplicateError = 'هذا المنتج عنده عرض نشط بالفعل';
+  static const String dealTabExisting = 'منتج موجود';
+  static const String dealTabNew = 'منتج للعرض فقط';
+  static const String dealExistingHint = 'المنتج بينزل سعره طول مدة العرض، ولما يخلص بيرجع لسعره الطبيعي بقسمه.';
+  static const String dealNewHint = 'منتج جديد بيطلع بس بشرار ونار، ولما يخلص العرض بيختفي من التطبيق.';
+  static const String dealCreateProduct = 'إنشاء المنتج';
+  static const String dealInvalid = 'الخصم لازم يكون بين 1 و 99، والمدة أكبر من صفر';
+  static const String dealAdded = 'انضاف العرض';
+  static const String dealFailed = 'ما انضاف العرض، جرّب مرة تانية';
+  static const String dealMissingProduct = 'المنتج محذوف — العرض ما بيطلع بالتطبيق، ألغيه';
   static const String productDiscount = 'خصم على المنتج';
   static const String productDiscountHint = 'اترك فارغاً إذا لا يوجد خصم';
   static const String totalProductImages = 'إجمالي صور المنتجات';

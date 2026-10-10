@@ -4,6 +4,9 @@ abstract class DealsAdminRepository {
   Future<List<DealPromotion>> getPromotions();
   Future<void> addPromotion(DealPromotion promotion);
   Future<void> cancelPromotion(String id);
+
+  /// Which of [productIds] have no product document.
+  Future<Set<String>> missingProducts(Iterable<String> productIds);
 }
 
 class FakeDealsAdminRepository implements DealsAdminRepository {
@@ -56,4 +59,7 @@ class FakeDealsAdminRepository implements DealsAdminRepository {
     final i = _promotions.indexWhere((p) => p.id == id);
     if (i != -1) _promotions[i] = _promotions[i].copyWith(isActive: false);
   }
+
+  @override
+  Future<Set<String>> missingProducts(Iterable<String> productIds) async => const {};
 }

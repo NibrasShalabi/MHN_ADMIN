@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/money.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
@@ -103,7 +103,6 @@ class _BatchDetailsPanelState extends State<BatchDetailsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat('#,###', 'ar');
     final orders = widget.ordersInBatch;
     final total = orders.fold<double>(0, (s, o) => s + o.totalPrice);
     final customerCount = orders.map((o) => o.customerPhone).toSet().length;
@@ -126,7 +125,7 @@ class _BatchDetailsPanelState extends State<BatchDetailsPanel> {
             Expanded(
               child: AdminStatBox(
                 label: AdminStrings.batchTotal,
-                value: '${currency.format(total)} ل.س',
+                value: Money.format(total),
               ),
             ),
           ],

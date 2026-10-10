@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/money.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -51,7 +52,6 @@ class _DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat('#,###', 'ar');
     final dateFormat = DateFormat('yyyy/MM/dd', 'ar');
 
     return BlocBuilder<DashboardCubit, DashboardState>(
@@ -118,7 +118,7 @@ class _DashboardView extends StatelessWidget {
                 final isCompact = constraints.maxWidth <= 700;
                 final cards = [
                   StatCard(label: AdminStrings.todayOrders, value: '${s.todayOrders}'),
-                  StatCard(label: AdminStrings.todayRevenue, value: '${currency.format(s.todayRevenue)} ل.س'),
+                  StatCard(label: AdminStrings.todayRevenue, value: Money.format(s.todayRevenue)),
                   StatCard(label: AdminStrings.approxUsers, value: '${s.approxUsers}'),
                   StatCard(label: AdminStrings.completedOrders, value: '${s.completedOrdersToday}'),
                 ];

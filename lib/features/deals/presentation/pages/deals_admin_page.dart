@@ -10,10 +10,13 @@ import '../../../../core/widgets/admin_dropdown.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_field.dart';
+import '../../../../core/utils/money.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../data/repositories/deals_admin_repository.dart';
 import '../../../products/data/repository/products_repository.dart';
 import '../../../products/domain/entities/product.dart' as admin_product;
+import '../../../products/presentation/cubits/products_cubit.dart';
+import '../../../products/presentation/pages/product_form_page.dart';
 import '../../domain/entities/deal_promotion.dart';
 import '../cubits/deals_admin_cubit.dart';
 import '../cubits/deals_admin_state.dart';
@@ -77,117 +80,102 @@ class _AddDealForm extends StatefulWidget {
 }
 
 class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabs = TabController(length: 2, vsync: this)..addListener(() => setState(() {}));
 
-  // Tab 1 — منتج موجود
-  admin_product.Product? _selectedProduct;
+  // Tab 1 — an existing store product.
   List<admin_product.Product> _products = [];
   bool _loadingProducts = true;
+  final _search = TextEditingController();
+  admin_product.Product? _selected;
 
-  // Tab 2 — منتج جديد
-  final _newNameController = TextEditingController();
-  final _newPriceController = TextEditingController();
+  // Tab 2 — a product made for this deal only.
+  admin_product.Product? _dealProduct;
 
-  // مشترك
-  final _discountController = TextEditingController();
-  final _hoursController = TextEditingController(text: '24');
+  final _discount = TextEditingController();
+  final _hours = TextEditingController(text: '24');
+  bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() {}));
     _loadProducts();
   }
 
   Future<void> _loadProducts() async {
-    final repo = GetIt.instance<ProductsRepository>();
-    final products = await repo.getProducts();
+    final products = await GetIt.instance<ProductsRepository>().getProducts();
+    if (!mounted) return;
     setState(() {
-      _products = products;
+      // Deal-only products belong to their own deal; gifts are priced in points.
+      _products = products.where((p) => !p.dealOnly && p.pricing == admin_product.ProductPricing.money).toList();
       _loadingProducts = false;
     });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _newNameController.dispose();
-    _newPriceController.dispose();
-    _discountController.dispose();
-    _hoursController.dispose();
+    _tabs.dispose();
+    _search.dispose();
+    _discount.dispose();
+    _hours.dispose();
     super.dispose();
   }
 
-  bool get _discountValid => double.tryParse(_discountController.text) != null;
-  bool get _hoursValid => int.tryParse(_hoursController.text) != null;
+  admin_product.Product? get _product => _tabs.index == 0 ? _selected : _dealProduct;
+  double? get _discountValue => double.tryParse(_discount.text.trim());
+  int? get _hoursValue => int.tryParse(_hours.text.trim());
+  bool get _canSubmit => !_submitting && _product != null && _discountValue != null && _hoursValue != null;
 
-  bool get _isExistingValid => _selectedProduct != null && _discountValid && _hoursValid;
-  bool get _isNewValid =>
-      _newNameController.text.isNotEmpty &&
-          double.tryParse(_newPriceController.text) != null &&
-          _discountValid &&
-          _hoursValid;
+  Future<void> _createDealProduct() async {
+    final product = await Navigator.of(context).push<admin_product.Product>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => ProductsCubit(GetIt.instance<ProductsRepository>()),
+          child: const ProductFormPage(dealOnly: true),
+        ),
+      ),
+    );
+    if (product != null && mounted) setState(() => _dealProduct = product);
+  }
 
-  Future<void> _submit(BuildContext context) async {
-    final discount = double.parse(_discountController.text);
-    final hours = int.parse(_hoursController.text);
-    final cubit = context.read<DealsAdminCubit>();
-
-    late DealsAdminResult result;
-
-    if (_tabController.index == 0) {
-      result = await cubit.addPromotion(
-        productId: _selectedProduct!.id,
-        productName: _selectedProduct!.name,
-        originalPrice: _selectedProduct!.price,
-        discountPercentage: discount,
-        durationHours: hours,
-      );
-      if (result == DealsAdminResult.success) {
-        setState(() => _selectedProduct = null);
-      }
-    } else {
-      final price = double.parse(_newPriceController.text);
-      result = await cubit.addPromotion(
-        productId: 'deal_${DateTime.now().millisecondsSinceEpoch}',
-        productName: _newNameController.text.trim(),
-        originalPrice: price,
-        discountPercentage: discount,
-        durationHours: hours,
-      );
-      if (result == DealsAdminResult.success) {
-        _newNameController.clear();
-        _newPriceController.clear();
-      }
-    }
-
-    if (!context.mounted) return;
-
-    if (result == DealsAdminResult.duplicatePromotion) {
-
-      return;
-    }
-
-    _discountController.clear();
-    _hoursController.text = '24';
+  Future<void> _submit() async {
+    final product = _product!;
+    setState(() => _submitting = true);
+    final result = await context.read<DealsAdminCubit>().addPromotion(
+          productId: product.id,
+          productName: product.name,
+          originalPrice: product.price,
+          discountPercentage: _discountValue!,
+          durationHours: _hoursValue!,
+        );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(switch (result) {
+        DealsAdminResult.success => AdminStrings.dealAdded,
+        DealsAdminResult.duplicatePromotion => AdminStrings.dealDuplicateError,
+        DealsAdminResult.invalid => AdminStrings.dealInvalid,
+        DealsAdminResult.failure => AdminStrings.dealFailed,
+      }),
+    ));
+    if (result != DealsAdminResult.success) return;
+    setState(() {
+      _selected = null;
+      _dealProduct = null;
+      _discount.clear();
+      _hours.text = '24';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isExisting = _tabController.index == 0;
-    final discount = double.tryParse(_discountController.text);
-    final basePrice = isExisting
-        ? _selectedProduct?.price
-        : double.tryParse(_newPriceController.text);
-    final previewPrice = basePrice != null && discount != null
-        ? basePrice * (1 - discount / 100)
-        : null;
+    final product = _product;
+    final discount = _discountValue;
+    final query = _search.text.trim();
+    final matches = _products.where((p) => query.isEmpty || p.name.contains(query)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Tabs
         Container(
           decoration: BoxDecoration(
             color: AdminColors.surfaceRaised,
@@ -195,72 +183,59 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
             border: Border.all(color: AdminColors.border),
           ),
           child: TabBar(
-            controller: _tabController,
+            controller: _tabs,
             labelStyle: AdminTextStyles.body,
             unselectedLabelStyle: AdminTextStyles.caption,
             labelColor: AdminColors.gold,
             unselectedLabelColor: AdminColors.textSecondary,
             indicatorColor: AdminColors.gold,
-            tabs: const [
-              Tab(text: 'منتج موجود'),
-              Tab(text: 'منتج جديد'),
-            ],
+            tabs: const [Tab(text: AdminStrings.dealTabExisting), Tab(text: AdminStrings.dealTabNew)],
           ),
         ),
         const SizedBox(height: AdminConstants.spacingMd),
-
-        // Tab 1 — منتج موجود
-        if (isExisting) ...[
+        if (_tabs.index == 0) ...[
+          Text(AdminStrings.dealExistingHint, style: AdminTextStyles.caption),
+          const SizedBox(height: AdminConstants.spacingMd),
           if (_loadingProducts)
             const Center(child: CircularProgressIndicator())
-          else
+          else ...[
+            AdminTextInput(controller: _search, hint: AdminStrings.searchProducts, onChanged: (_) => setState(() {})),
+            const SizedBox(height: AdminConstants.spacingSm),
             AdminField(
               label: AdminStrings.selectProduct,
               isRequired: true,
               child: AdminDropdown<admin_product.Product>(
-                value: _selectedProduct,
-                items: _products,
-                labelOf: (p) => '${p.name} — \$${p.price.toStringAsFixed(2)}',
+                value: matches.contains(_selected) ? _selected : null,
+                items: matches,
+                labelOf: (p) => '${p.name} — ${Money.format(p.price)}',
                 hint: AdminStrings.selectProduct,
-                onChanged: (p) => setState(() => _selectedProduct = p),
+                onChanged: (p) => setState(() => _selected = p),
               ),
             ),
+          ],
+        ] else ...[
+          Text(AdminStrings.dealNewHint, style: AdminTextStyles.caption),
+          const SizedBox(height: AdminConstants.spacingMd),
+          if (_dealProduct case final p?)
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: AdminColors.gold, size: 20),
+                const SizedBox(width: AdminConstants.spacingSm),
+                Expanded(child: Text('${p.name} — ${Money.format(p.price)}', style: AdminTextStyles.body)),
+              ],
+            )
+          else
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AdminButton(
+                label: AdminStrings.dealCreateProduct,
+                icon: Icons.add,
+                kind: AdminButtonKind.secondary,
+                onPressed: _createDealProduct,
+              ),
+            ),
+          const SizedBox(height: AdminConstants.spacingMd),
         ],
-
-        // Tab 2 — منتج جديد
-        if (!isExisting)
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: AdminField(
-                  label: AdminStrings.productName,
-                  isRequired: true,
-                  child: AdminTextInput(
-                    controller: _newNameController,
-                    hint: 'اسم المنتج',
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AdminConstants.spacingMd),
-              Expanded(
-                child: AdminField(
-                  label: AdminStrings.dealOriginalPrice,
-                  isRequired: true,
-                  child: AdminTextInput(
-                    controller: _newPriceController,
-                    hint: '50.00',
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-        const SizedBox(height: AdminConstants.spacingMd),
-
-        // مشترك — خصم ومدة
         Row(
           children: [
             Expanded(
@@ -268,11 +243,7 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
                 label: AdminStrings.dealDiscount,
                 isRequired: true,
                 hint: AdminStrings.dealDiscountHint,
-                child: AdminTextInput(
-                  controller: _discountController,
-                  hint: '70',
-                  onChanged: (_) => setState(() {}),
-                ),
+                child: AdminTextInput(controller: _discount, hint: '70', onChanged: (_) => setState(() {})),
               ),
             ),
             const SizedBox(width: AdminConstants.spacingMd),
@@ -281,31 +252,23 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
                 label: AdminStrings.dealDuration,
                 isRequired: true,
                 hint: AdminStrings.dealDurationHint,
-                child: AdminTextInput(
-                  controller: _hoursController,
-                  hint: '24',
-                  onChanged: (_) => setState(() {}),
-                ),
+                child: AdminTextInput(controller: _hours, hint: '24', onChanged: (_) => setState(() {})),
               ),
             ),
           ],
         ),
-
-        if (previewPrice != null)
+        if (product != null && discount != null)
           Padding(
             padding: const EdgeInsets.only(bottom: AdminConstants.spacingMd),
             child: Text(
-              '${AdminStrings.dealPreview}: \$${previewPrice.toStringAsFixed(2)}',
+              '${AdminStrings.dealPreview}: ${Money.format(product.price * (1 - discount / 100))}',
               style: AdminTextStyles.caption.copyWith(color: AdminColors.gold),
             ),
           ),
-
         AdminButton(
           label: AdminStrings.addDeal,
           icon: Icons.local_fire_department_outlined,
-          onPressed: (isExisting ? _isExistingValid : _isNewValid)
-              ? () => _submit(context)
-              : null,
+          onPressed: _canSubmit ? _submit : null,
         ),
       ],
     );
@@ -355,11 +318,13 @@ class _DealRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(promotion.productName, style: AdminTextStyles.body),
+                if (isActive && context.read<DealsAdminCubit>().state.isMissing(promotion))
+                  Text(AdminStrings.dealMissingProduct, style: AdminTextStyles.caption.copyWith(color: AdminColors.danger)),
                 const SizedBox(height: 2),
                 Row(
                   children: [
                     Text(
-                      '\$${promotion.originalPrice.toStringAsFixed(2)}',
+                      Money.format(promotion.originalPrice),
                       style: AdminTextStyles.caption.copyWith(
                         decoration: TextDecoration.lineThrough,
                         color: AdminColors.textDisabled,
@@ -367,7 +332,7 @@ class _DealRow extends StatelessWidget {
                     ),
                     const SizedBox(width: AdminConstants.spacingSm),
                     Text(
-                      '\$${promotion.discountedPrice.toStringAsFixed(2)}',
+                      Money.format(promotion.discountedPrice),
                       style: AdminTextStyles.caption.copyWith(color: AdminColors.gold),
                     ),
                     const SizedBox(width: AdminConstants.spacingSm),

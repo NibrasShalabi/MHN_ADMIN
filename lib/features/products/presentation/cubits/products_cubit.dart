@@ -23,12 +23,12 @@ class ProductsCubit extends SafeCubit<ProductsState> {
 
   Future<ProductPrivate> loadPrivate(String productId) => _repository.getPrivate(productId);
 
-  Future<void> addProduct(Product product, ProductPrivate private) => _write(
+  Future<bool> addProduct(Product product, ProductPrivate private) => _write(
         () => _repository.addProduct(product, private),
         (list) => [...list, product],
       );
 
-  Future<void> updateProduct(Product product, ProductPrivate private) => _write(
+  Future<bool> updateProduct(Product product, ProductPrivate private) => _write(
         () => _repository.updateProduct(product, private),
         (list) => [for (final p in list) p.id == product.id ? product : p],
       );
@@ -38,12 +38,14 @@ class ProductsCubit extends SafeCubit<ProductsState> {
         (list) => list.where((p) => p.id != id).toList(),
       );
 
-  Future<void> _write(Future<void> Function() action, List<Product> Function(List<Product>) patch) async {
+  Future<bool> _write(Future<void> Function() action, List<Product> Function(List<Product>) patch) async {
     try {
       await action();
       emit(state.copyWith(products: patch(state.products)));
+      return true;
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString()));
+      return false;
     }
   }
 }

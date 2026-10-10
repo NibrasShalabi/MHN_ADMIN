@@ -102,7 +102,7 @@ class _ProductsViewState extends State<_ProductsView> {
 
             // The store tab and the loyalty gifts tab each list their own products.
             final products = state.products
-                .where((p) => p.pricing == widget.pricingMode)
+                .where((p) => p.pricing == widget.pricingMode && !p.dealOnly)
                 .where((p) => _query.isEmpty || p.name.contains(_query))
                 .toList();
             final cubit = context.read<ProductsCubit>();

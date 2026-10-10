@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/money.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -127,7 +128,6 @@ class _OrdersViewState extends State<_OrdersView> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat('#,###', 'ar');
     final dateFormat = DateFormat('yyyy/MM/dd', 'ar');
 
     return Column(
@@ -205,7 +205,7 @@ class _OrdersViewState extends State<_OrdersView> {
                   return [
                     Text(batch.name, style: AdminTextStyles.caption),
                     Text('${ordersInBatch.length}', style: AdminTextStyles.caption),
-                    Text('${currency.format(total)} ل.س', style: AdminTextStyles.caption),
+                    Text(Money.format(total), style: AdminTextStyles.caption),
                   ];
                 },
                 onRowTap: (index) {
@@ -272,7 +272,7 @@ class _OrdersViewState extends State<_OrdersView> {
                       Text(order.id, style: AdminTextStyles.caption),
                       Text(order.customerName, style: AdminTextStyles.caption),
                       Text(dateFormat.format(order.orderDate), style: AdminTextStyles.caption),
-                      Text('${currency.format(order.totalPrice)} ل.س', style: AdminTextStyles.caption),
+                      Text(Money.format(order.totalPrice), style: AdminTextStyles.caption),
                       AdminStatusChip(label: order.status.label, color: order.status.color),
                     ];
                   },

@@ -1,49 +1,37 @@
 import 'dart:async';
+
 import '../../../../core/bloc/safe_cubit.dart';
 import '../../data/repositories/deals_admin_repository.dart';
 import '../../domain/entities/deal_promotion.dart';
 import 'deals_admin_state.dart';
 
+enum DealsAdminResult { success, duplicatePromotion, invalid, failure }
+
 class DealsAdminCubit extends SafeCubit<DealsAdminState> {
   final DealsAdminRepository _repository;
-  Timer? _refreshTimer;
+  Timer? _ticker;
 
   DealsAdminCubit(this._repository) : super(const DealsAdminState());
 
   Future<void> load() async {
     emit(state.copyWith(status: DealsAdminStatus.loading));
     try {
-      final promotions = await _repository.getPromotions();
-
-      // ط«ط؛ط±ط© 1: ظپظ„طھط± ط§ظ„ظ…ظ†طھط¬ط§طھ ط§ظ„ظ…ط­ط°ظˆظپط© â€” ظ„ظ…ط§ Firebase ظٹط¬ظٹ ط¨ظ†طھط­ظ‚ظ‚ ظ…ظ† ظˆط¬ظˆط¯ ط§ظ„ظ…ظ†طھط¬
-      // ط¨ط§ظ„ظ€ Fake phase: ظ†ط¹طھظ…ط¯ ط¹ظ„ظ‰ isActive ظپظ‚ط·
-      emit(state.copyWith(status: DealsAdminStatus.success, promotions: promotions));
-
-      _startRefreshTimer();
+      await _refresh();
+      emit(state.copyWith(status: DealsAdminStatus.success));
+      // Countdown only — re-emits the same data, never re-reads Firestore.
+      _ticker ??= Timer.periodic(const Duration(minutes: 1), (_) => emit(state.copyWith(tick: state.tick + 1)));
     } catch (e) {
       emit(state.copyWith(status: DealsAdminStatus.failure, error: e.toString()));
     }
   }
 
-  // ط«ط؛ط±ط© 2: refresh طھظ„ظ‚ط§ط¦ظٹ ظƒظ„ ط¯ظ‚ظٹظ‚ط© ظ„طھط­ط¯ظٹط« ط§ظ„ظ€ countdown
-  void _startRefreshTimer() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (state.status == DealsAdminStatus.success) {
-        // ظ†ط­ط¯ط« ط§ظ„ظ€ state ط¨ط¯ظˆظ† loading ظ„طھط¬ظ†ط¨ ط§ظ„ظ€ flicker
-        _refreshPromotions();
-      }
-    });
+  Future<void> _refresh() async {
+    final promotions = await _repository.getPromotions();
+    final activeIds = promotions.where((p) => p.isActive && !p.isExpired).map((p) => p.productId);
+    final missing = await _repository.missingProducts(activeIds);
+    emit(state.copyWith(promotions: promotions, missingProductIds: missing));
   }
 
-  Future<void> _refreshPromotions() async {
-    try {
-      final promotions = await _repository.getPromotions();
-      emit(state.copyWith(promotions: promotions));
-    } catch (_) {}
-  }
-
-  // ط«ط؛ط±ط© 3: طھط­ظ‚ظ‚ ظ…ظ† ظˆط¬ظˆط¯ ط¹ط±ط¶ ظ†ط´ط· ظ‚ط¨ظ„ ط§ظ„ط¥ط¶ط§ظپط©
   Future<DealsAdminResult> addPromotion({
     required String productId,
     required String productName,
@@ -51,35 +39,40 @@ class DealsAdminCubit extends SafeCubit<DealsAdminState> {
     required double discountPercentage,
     required int durationHours,
   }) async {
-    // طھط­ظ‚ظ‚ ظ…ظ† ط¹ط±ط¶ ظ†ط´ط· ط¹ظ„ظ‰ ظ†ظپط³ ط§ظ„ظ…ظ†طھط¬
-    final hasActive = state.active.any((p) => p.productId == productId);
-    if (hasActive) return DealsAdminResult.duplicatePromotion;
+    if (discountPercentage <= 0 || discountPercentage >= 100 || durationHours <= 0) return DealsAdminResult.invalid;
+    if (state.hasActivePromotion(productId)) return DealsAdminResult.duplicatePromotion;
 
-    final promo = DealPromotion(
-      id: 'promo_${DateTime.now().millisecondsSinceEpoch}',
-      productId: productId,
-      productName: productName,
-      originalPrice: originalPrice,
-      discountPercentage: discountPercentage,
-      startTime: DateTime.now(),
-      endTime: DateTime.now().add(Duration(hours: durationHours)),
-    );
-
-    await _repository.addPromotion(promo);
-    await _refreshPromotions();
-    return DealsAdminResult.success;
+    final now = DateTime.now();
+    try {
+      await _repository.addPromotion(DealPromotion(
+        id: 'promo_${now.millisecondsSinceEpoch}',
+        productId: productId,
+        productName: productName,
+        originalPrice: originalPrice,
+        discountPercentage: discountPercentage,
+        startTime: now,
+        endTime: now.add(Duration(hours: durationHours)),
+      ));
+      await _refresh();
+      return DealsAdminResult.success;
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+      return DealsAdminResult.failure;
+    }
   }
 
   Future<void> cancelPromotion(String id) async {
-    await _repository.cancelPromotion(id);
-    await _refreshPromotions();
+    try {
+      await _repository.cancelPromotion(id);
+      await _refresh();
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+    }
   }
 
   @override
   Future<void> close() {
-    _refreshTimer?.cancel();
+    _ticker?.cancel();
     return super.close();
   }
 }
-
-enum DealsAdminResult { success, duplicatePromotion }

@@ -145,6 +145,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       colorIds: colorIds,
       sizeGuide: sizeGuide,
       discountPercentage: (d['discountPercentage'] as num?)?.toDouble(),
+      dealOnly: d['dealOnly'] as bool? ?? false,
     );
   }
 
@@ -173,6 +174,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       'usage': product.usage,
       'isNew': product.isNew,
       'isOrderable': product.isOrderable,
+      'dealOnly': product.dealOnly,
       'clothingSizes': clothingSizes,
       'shoeSizes': <int>[],
       'colors': colors,

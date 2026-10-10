@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/utils/money.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -148,19 +149,19 @@ class _AnalyticsView extends StatelessWidget {
               ),
               StatCard(
                 label: AdminStrings.revenue,
-                value: '\$${currency.format(revenue)}',
+                value: Money.format(revenue),
                 icon: Icons.payments_outlined,
                 trend: _trend(revenue, previous, prevRevenue),
               ),
               StatCard(
                 label: AdminStrings.netProfit,
-                value: '\$${currency.format(state.data.netProfit)}',
+                value: Money.format(state.data.netProfit),
                 valueColor: AdminColors.gold,
                 icon: Icons.trending_up,
               ),
               StatCard(
                 label: AdminStrings.averageOrderValue,
-                value: '\$${currency.format(state.data.averageOrderValue)}',
+                value: Money.format(state.data.averageOrderValue),
                 icon: Icons.calculate_outlined,
               ),
             ];
@@ -265,7 +266,7 @@ class _AnalyticsView extends StatelessWidget {
               unit: AdminStrings.revenue,
               icon: Icons.savings_outlined,
               accentColor: AdminColors.gold,
-              formatValue: (v) => '\$${currency.format(v)}',
+              formatValue: (v) => Money.format(v),
             ),
           ],
         ),

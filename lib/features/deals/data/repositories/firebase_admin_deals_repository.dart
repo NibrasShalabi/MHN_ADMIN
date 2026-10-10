@@ -3,9 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/deal_promotion.dart';
 import 'deals_admin_repository.dart';
 
-/// Firebase implementation لـ DealsAdminRepository
-/// نفس الـ promotions collection اللي بيقرأها الـ Client App
+/// Same `promotions` collection the client app reads.
 class FirebaseAdminDealsRepository implements DealsAdminRepository {
+  static const int _historyLimit = 100;
+  static const int _whereInLimit = 30;
+
   final FirebaseFirestore _db;
 
   FirebaseAdminDealsRepository(this._db);
@@ -15,6 +17,7 @@ class FirebaseAdminDealsRepository implements DealsAdminRepository {
     final snap = await _db
         .collection('promotions')
         .orderBy('startTime', descending: true)
+        .limit(_historyLimit)
         .get();
     return snap.docs.map(_fromDoc).toList();
   }
@@ -37,6 +40,18 @@ class FirebaseAdminDealsRepository implements DealsAdminRepository {
     await _db.collection('promotions').doc(id).update({
       'isActive': false,
     });
+  }
+
+  @override
+  Future<Set<String>> missingProducts(Iterable<String> productIds) async {
+    final ids = productIds.where((id) => id.isNotEmpty).toSet().toList();
+    final found = <String>{};
+    for (var i = 0; i < ids.length; i += _whereInLimit) {
+      final chunk = ids.sublist(i, (i + _whereInLimit).clamp(0, ids.length));
+      final snap = await _db.collection('products').where(FieldPath.documentId, whereIn: chunk).get();
+      found.addAll(snap.docs.map((d) => d.id));
+    }
+    return ids.toSet().difference(found);
   }
 
   // ===== Mapper =====

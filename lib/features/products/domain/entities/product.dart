@@ -43,6 +43,10 @@ class Product extends Equatable {
   final SizeGuideTemplate? sizeGuide;
   final double? discountPercentage;
 
+  /// Created for one fire deal: listed nowhere else, and gone from the app
+  /// once its deal ends.
+  final bool dealOnly;
+
   const Product({
     required this.id,
     required this.name,
@@ -65,6 +69,7 @@ class Product extends Equatable {
     this.colorIds = const {},
     this.sizeGuide,
     this.discountPercentage,
+    this.dealOnly = false,
   });
 
   Product copyWith({
@@ -111,6 +116,7 @@ class Product extends Equatable {
       colorIds: colorIds ?? this.colorIds,
       sizeGuide: sizeGuide ?? this.sizeGuide,
       discountPercentage: discountPercentage ?? this.discountPercentage,
+      dealOnly: dealOnly,
     );
   }
 
@@ -137,5 +143,6 @@ class Product extends Equatable {
     colorIds,
     sizeGuide,
     discountPercentage,
+    dealOnly,
   ];
 }
