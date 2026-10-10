@@ -48,15 +48,15 @@ class _ReviewsPageState extends State<ReviewsPage> {
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(AdminConstants.spacingLg),
-          itemCount: reviews.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AdminConstants.spacingMd),
-          itemBuilder: (context, index) => _ReviewTile(
-            review: reviews[index],
-            repo: _repo,
-            onDone: _load,
-          ),
+        // The section shell already scrolls — a nested ListView has no height.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (i, review) in reviews.indexed) ...[
+              if (i > 0) const SizedBox(height: AdminConstants.spacingMd),
+              _ReviewTile(review: review, repo: _repo, onDone: _load),
+            ],
+          ],
         );
       },
     );
