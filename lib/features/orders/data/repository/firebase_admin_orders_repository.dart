@@ -322,6 +322,9 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         unitPrice: ((item['unitPrice'] ?? item['priceSnapshot']) as num? ?? 0).toDouble(),
         shippingPerUnit: (item['shippingPerUnit'] as num? ?? 0).toDouble(),
         isPoints: item['pricing'] == 'points',
+        size: item['size'] as String?,
+        color: item['color'] as String?,
+        colorValue: item['colorValue'] as int?,
       ))
           .toList(),
     );

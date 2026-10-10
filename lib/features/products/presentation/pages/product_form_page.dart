@@ -17,6 +17,7 @@ import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../../categories/data/repository/categories_repository.dart';
 import '../../../categories/domain/entities/category.dart';
+import '../../../presets/data/repository/presets_repository.dart';
 import '../../../presets/domain/entities/presets.dart';
 import '../../../presets/presentation/widgets/product_variants_section.dart';
 import '../../domain/entities/product.dart';
@@ -53,7 +54,9 @@ class ProductFormPage extends StatefulWidget {
 }
 
 class _ProductFormPageState extends State<ProductFormPage> {
-  static const CatalogPresets _presets = DefaultPresets.all;
+  /// The shop's own size sets, colours and size charts (defaults until
+  /// the admin saves some) — what the presets screen manages.
+  final Future<CatalogPresets> _presetsFuture = GetIt.instance<PresetsRepository>().getPresets();
 
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
@@ -202,6 +205,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
     return scope == CategoryScope.loyalty ? ProductPricing.points : ProductPricing.money;
   }
 
+  /// The saved product only knows its set's id (or, if older, just its
+  /// sizes) — find the full preset so its chips show.
+  SizeSet? _matchSizeSet(CatalogPresets presets) {
+    final current = _sizeSet;
+    if (current != null) return presets.sizeSets.where((s) => s.id == current.id).firstOrNull ?? current;
+    if (_sizes.isEmpty) return null;
+    return presets.sizeSets.where((s) => _sizes.every(s.sizes.contains)).firstOrNull;
+  }
+
   /// The categories this form may file the product under.
   bool _offers(Category c) => switch ((widget.supplierId, widget.scope)) {
         (final id?, _) => c.supplierId == id,
@@ -243,7 +255,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       images: _images,
       isNew: _isNew,
       isOrderable: _isOrderable,
-      sizeSet: _sizeSet,
+      sizeSet: _sizeSet ?? (await _presetsFuture).sizeSets.where((s) => _sizes.isNotEmpty && _sizes.every(s.sizes.contains)).firstOrNull,
       sizes: _sizes,
       colorIds: _colorIds,
       sizeGuide: _sizeGuide,
@@ -510,16 +522,23 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 const SizedBox(height: AdminConstants.spacingLg),
 
                 // ===== المتغيرات =====
-                ProductVariantsSection(
-                  presets: _presets,
-                  sizeSet: _sizeSet,
-                  selectedSizes: _sizes,
-                  selectedColorIds: _colorIds,
-                  sizeGuide: _sizeGuide,
-                  onSizeSetChanged: (set) => setState(() => _sizeSet = set),
-                  onSizesChanged: (sizes) => setState(() => _sizes = sizes),
-                  onColorsChanged: (ids) => setState(() => _colorIds = ids),
-                  onSizeGuideChanged: (guide) => setState(() => _sizeGuide = guide),
+                FutureBuilder<CatalogPresets>(
+                  future: _presetsFuture,
+                  builder: (context, snap) {
+                    if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+                    final presets = snap.data!;
+                    return ProductVariantsSection(
+                      presets: presets,
+                      sizeSet: _matchSizeSet(presets),
+                      selectedSizes: _sizes,
+                      selectedColorIds: _colorIds,
+                      sizeGuide: _sizeGuide,
+                      onSizeSetChanged: (set) => setState(() => _sizeSet = set),
+                      onSizesChanged: (sizes) => setState(() => _sizes = sizes),
+                      onColorsChanged: (ids) => setState(() => _colorIds = ids),
+                      onSizeGuideChanged: (guide) => setState(() => _sizeGuide = guide),
+                    );
+                  },
                 ),
                 const SizedBox(height: AdminConstants.spacingLg),
 

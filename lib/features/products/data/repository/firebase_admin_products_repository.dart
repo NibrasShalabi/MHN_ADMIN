@@ -37,7 +37,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   Future<void> addProduct(Product product, ProductPrivate private) async {
     final batch = _db.batch()
       ..set(_db.collection('products').doc(product.id), {
-        ..._toMap(product),
+        ...await _toMap(product),
         'imageUrls': <String>[],
         'createdAt': FieldValue.serverTimestamp(),
       })
@@ -52,8 +52,11 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   Future<void> updateProduct(Product product, ProductPrivate private) async {
     final batch = _db.batch()
       ..update(_db.collection('products').doc(product.id), {
-        ..._toMap(product),
+        ...await _toMap(product),
         'costPrice': FieldValue.delete(),
+        // Replaced by 'sizes'.
+        'clothingSizes': FieldValue.delete(),
+        'shoeSizes': FieldValue.delete(),
       })
       ..set(_db.collection(_private).doc(product.id), _privateToMap(private), SetOptions(merge: true));
     CatalogVersion.bump(_db, batch);
@@ -104,11 +107,14 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   Product _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
 
-    // قراءة clothingSizes → sizes (Admin format)
-    final clothingSizes = d['clothingSizes'] as List? ?? [];
-    final sizes = Set<String>.from(
-      clothingSizes.map((s) => (s as String).toUpperCase()),
-    );
+    // 'sizes' holds any size set's values; older products split them by kind.
+    final sizes = <String>{
+      for (final s in d['sizes'] as List? ?? const []) '$s',
+      if (d['sizes'] == null) ...[
+        for (final s in d['clothingSizes'] as List? ?? const []) '$s'.toUpperCase(),
+        for (final s in d['shoeSizes'] as List? ?? const []) '$s',
+      ],
+    };
 
     // قراءة colors → colorIds (Admin format)
     final colorsList = d['colors'] as List? ?? [];
@@ -147,6 +153,11 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       isNew: d['isNew'] as bool? ?? false,
       isOrderable: d['isOrderable'] as bool? ?? true,
       sizes: sizes,
+      // Only the id survives a save; the form swaps in the full preset.
+      sizeSet: switch (d['sizeSetId']) {
+        final String id => SizeSet(id: id, name: '', sizes: sizes.toList()),
+        _ => null,
+      },
       colorIds: colorIds,
       sizeGuide: sizeGuide,
       discountPercentage: (d['discountPercentage'] as num?)?.toDouble(),
@@ -154,14 +165,22 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     );
   }
 
-  static final Map<String, PaletteColor> _palette = {for (final c in DefaultPresets.all.colors) c.id: c};
+  /// The shop's palette (saved colours over the defaults), read once.
+  Future<Map<String, PaletteColor>>? _paletteFuture;
+  Future<Map<String, PaletteColor>> _palette() => _paletteFuture ??= _db.collection('paletteColors').get().then((snap) => {
+        for (final c in DefaultPresets.all.colors) c.id: c,
+        for (final d in snap.docs)
+          d.id: PaletteColor(id: d.id, name: d.data()['name'] as String? ?? d.id, value: d.data()['value'] as int? ?? 0xFF8A8A8A),
+      });
 
   /// What the app shows: the Arabic name and the real swatch, plus the id
   /// the dashboard edits by.
-  static List<Map<String, dynamic>> _colorsToMap(Iterable<String> ids) => [
-        for (final id in ids)
-          {'id': id, 'name': _palette[id]?.name ?? id, 'value': _palette[id]?.value ?? 0xFF8A8A8A},
-      ];
+  Future<List<Map<String, dynamic>>> _colorsToMap(Iterable<String> ids) async {
+    final palette = await _palette();
+    return [
+      for (final id in ids) {'id': id, 'name': palette[id]?.name ?? id, 'value': palette[id]?.value ?? 0xFF8A8A8A},
+    ];
+  }
 
   /// One-time, self-healing: older products stored the colour id as its
   /// name with a black swatch. Rewrites them the first time the list loads.
@@ -174,20 +193,20 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       final batch = _db.batch();
       for (final doc in legacy.skip(i).take(400)) {
         final ids = (doc.data()['colors'] as List).map((c) => (c as Map)['name'] as String? ?? '');
-        batch.update(doc.reference, {'colors': _colorsToMap(ids)});
+        batch.update(doc.reference, {'colors': await _colorsToMap(ids)});
       }
       CatalogVersion.bump(_db, batch);
       await batch.commit();
     }
   }
 
-  Map<String, dynamic> _toMap(Product product) {
-    final clothingSizes = product.sizes
-        .map((s) => s.toLowerCase())
-        .where((s) => ['xs', 's', 'm', 'l', 'xl', 'xxl'].contains(s))
-        .toList();
-
-    final colors = _colorsToMap(product.colorIds);
+  Future<Map<String, dynamic>> _toMap(Product product) async {
+    final colors = await _colorsToMap(product.colorIds);
+    // In the set's own order (S before M, 1-2 before 3-4), not tap order.
+    final sizes = [
+      ...?product.sizeSet?.sizes.where(product.sizes.contains),
+      ...product.sizes.where((s) => !(product.sizeSet?.sizes.contains(s) ?? false)),
+    ];
 
     return {
       'name': product.name,
@@ -204,8 +223,8 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       'isNew': product.isNew,
       'isOrderable': product.isOrderable,
       'dealOnly': product.dealOnly,
-      'clothingSizes': clothingSizes,
-      'shoeSizes': <int>[],
+      'sizes': sizes,
+      'sizeSetId': product.sizeSet?.id,
       'colors': colors,
       'sizeGuide': product.sizeGuide?.rows.map((r) => {
         'size': r.size,

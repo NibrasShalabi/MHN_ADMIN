@@ -23,8 +23,7 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
   @override
   Future<void> addBanner(PromoBanner banner) async {
     await CatalogVersion.commit(_db, (b) => b.set(_db.collection('banners').doc(banner.id), {
-          'title': banner.title,
-          'order': banner.order,
+          ..._toMap(banner),
           'imageUrl': null, // لاحقاً بعد Storage
           'isActive': true,
         }));
@@ -32,10 +31,7 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
 
   @override
   Future<void> updateBanner(PromoBanner banner) async {
-    await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(banner.id), {
-          'title': banner.title,
-          'order': banner.order,
-        }));
+    await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(banner.id), _toMap(banner)));
   }
 
   @override
@@ -43,12 +39,25 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
     await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(id), {'isActive': false}));
   }
 
+  Map<String, dynamic> _toMap(PromoBanner b) => {
+        'title': b.title,
+        'order': b.order,
+        'link': b.link.key,
+        'linkId': b.link.needsTarget ? b.linkId : null,
+        'startsAt': b.startsAt == null ? null : Timestamp.fromDate(b.startsAt!),
+        'endsAt': b.endsAt == null ? null : Timestamp.fromDate(b.endsAt!),
+      };
+
   PromoBanner _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
     return PromoBanner(
       id: doc.id,
       title: d['title'] as String?,
-      order: d['order'] as int? ?? 0,
+      order: (d['order'] as num? ?? 0).toInt(),
+      link: BannerLink.fromKey(d['link'] as String?),
+      linkId: d['linkId'] as String?,
+      startsAt: (d['startsAt'] as Timestamp?)?.toDate(),
+      endsAt: (d['endsAt'] as Timestamp?)?.toDate(),
       // imageBytes: null — الصور من Storage لاحقاً
     );
   }

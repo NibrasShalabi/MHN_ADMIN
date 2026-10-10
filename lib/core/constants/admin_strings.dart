@@ -528,4 +528,18 @@ class AdminStrings {
   static const String supplierMapsHint = 'من Google Maps: شارك ← نسخ الرابط';
   static const String supplierMapsInvalid = 'الرابط لازم يبلش بـ https://';
   static const String supplierActive = 'المتجر ظاهر بالتطبيق';
+
+  // ===== Order items =====
+  static const String orderItemSize = 'المقاس';
+
+  // ===== Banners =====
+  static const String bannerLink = 'لما الزبون يكبس على البانر';
+  static const String bannerLinkNone = 'بدون';
+  static const String bannerLinkProduct = 'منتج';
+  static const String bannerLinkCategory = 'قسم';
+  static const String bannerLinkDeals = 'شرار ونار';
+  static const String bannerSchedule = 'مدة الظهور (اختياري)';
+  static const String bannerStarts = 'من';
+  static const String bannerEnds = 'لـ';
+  static const String bannerAlways = 'دايماً';
 }

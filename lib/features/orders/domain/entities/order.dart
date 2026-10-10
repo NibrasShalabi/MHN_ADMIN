@@ -14,6 +14,11 @@ class OrderItem extends Equatable {
   final double shippingPerUnit;
   final bool isPoints;
 
+  /// What the customer picked, if the product has sizes / colours.
+  final String? size;
+  final String? color;
+  final int? colorValue;
+
   const OrderItem({
     this.productId = '',
     required this.productName,
@@ -21,10 +26,13 @@ class OrderItem extends Equatable {
     this.unitPrice = 0,
     this.shippingPerUnit = 0,
     this.isPoints = false,
+    this.size,
+    this.color,
+    this.colorValue,
   });
 
   @override
-  List<Object?> get props => [productId, productName, quantity, unitPrice, shippingPerUnit, isPoints];
+  List<Object?> get props => [productId, productName, quantity, unitPrice, shippingPerUnit, isPoints, size, color, colorValue];
 }
 
 class Order extends Equatable {

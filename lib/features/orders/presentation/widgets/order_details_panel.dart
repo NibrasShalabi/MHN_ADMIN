@@ -138,9 +138,41 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
               (item) => Padding(
             padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingXs),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.productName, style: AdminTextStyles.caption),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.productName, style: AdminTextStyles.caption),
+                      if (item.size != null || item.color != null)
+                        Wrap(
+                          spacing: AdminConstants.spacingSm,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (item.size case final size?)
+                              Text('${AdminStrings.orderItemSize}: $size',
+                                  style: AdminTextStyles.caption.copyWith(color: AdminColors.gold)),
+                            if (item.color case final color?)
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                if (item.colorValue case final v?)
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    margin: const EdgeInsetsDirectional.only(end: AdminConstants.spacingXs),
+                                    decoration: BoxDecoration(
+                                      color: Color(v),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: AdminColors.border),
+                                    ),
+                                  ),
+                                Text(color, style: AdminTextStyles.caption.copyWith(color: AdminColors.gold)),
+                              ]),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
                 Text('x${item.quantity}', style: AdminTextStyles.caption),
               ],
             ),
