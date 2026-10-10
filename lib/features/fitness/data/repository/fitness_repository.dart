@@ -3,8 +3,8 @@ import '../../domain/entities/health_program.dart';
 
 abstract class FitnessRepository {
   Future<List<HealthProgram>> getPrograms();
-  Future<void> addProgram(HealthProgram program);
-  Future<void> updateProgram(HealthProgram program);
+  /// Creates or replaces the program under its (fixed) id.
+  Future<void> saveProgram(HealthProgram program, {required int order});
   Future<void> deleteProgram(String id);
 
   /// Newest first, the latest [FirebaseAdminFitnessRepository.pageSize].

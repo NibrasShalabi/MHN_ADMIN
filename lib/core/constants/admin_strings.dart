@@ -508,4 +508,13 @@ class AdminStrings {
   static const String specialistWhatsappHint =
       'الرقم اللي بيتواصل عليه الزبائن من صفحة المستحضرات ومن زر «استشيري المختصة» على المنتجات اللي بدها استشارة. مع رمز الدولة، بدون صفر بالأول.';
   static const String specialistWhatsappInvalid = 'رقم غير صحيح — مثال: 963912345678';
+
+  // ===== Fitness sections =====
+  static const String fitnessSectionsHint =
+      'أقسام اللياقة الأربعة ثابتة بالتطبيق. لكل قسم حطي الأسئلة اللي بتحتاجها المختصة لتعمل برنامج مخصص — القسم بيطلع للزبونات لما يكون فيه أسئلة.';
+  static const String sectionLive = 'ظاهر';
+  static const String sectionNoQuestions = 'بدون أسئلة';
+  static const String editQuestions = 'تعديل الأسئلة';
+  static const String legacyPrograms = 'برامج قديمة';
+  static const String legacyProgramsHint = 'انعملت قبل تثبيت الأقسام الأربعة وما بتطلع بالتطبيق — احذفيها.';
 }

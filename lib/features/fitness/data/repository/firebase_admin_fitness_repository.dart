@@ -31,13 +31,8 @@ class FirebaseAdminFitnessRepository implements FitnessRepository {
   }
 
   @override
-  Future<void> addProgram(HealthProgram program) async {
-    final count = (await _programs.count().get()).count ?? 0;
-    await _programs.doc(program.id).set({..._programToMap(program), 'order': count});
-  }
-
-  @override
-  Future<void> updateProgram(HealthProgram program) => _programs.doc(program.id).update(_programToMap(program));
+  Future<void> saveProgram(HealthProgram program, {required int order}) =>
+      _programs.doc(program.id).set({..._programToMap(program), 'order': order});
 
   @override
   Future<void> deleteProgram(String id) => _programs.doc(id).delete();

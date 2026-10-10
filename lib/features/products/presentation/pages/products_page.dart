@@ -49,12 +49,16 @@ class _ProductsViewState extends State<_ProductsView> {
   final _searchController = TextEditingController();
   String _query = '';
 
-  /// Category ids of [_ProductsView.scope]; null when the page isn't scoped.
-  late final Future<Set<String>?> _scopeIds = widget.scope == null
-      ? Future.value(null)
-      : GetIt.instance<CategoriesRepository>()
-          .getCategories()
-          .then((all) => {for (final c in all) if (c.scope == widget.scope) c.id});
+  /// Every section lists only its own products: fitness its fitness
+  /// categories, the store everything but fitness, loyalty its points gifts.
+  late final Future<bool Function(Product)> _belongs = GetIt.instance<CategoriesRepository>().getCategories().then((all) {
+    final fitness = {for (final c in all) if (c.scope == CategoryScope.fitness) c.id};
+    final scoped = {for (final c in all) if (c.scope == widget.scope) c.id};
+    return (Product p) => switch (widget.scope) {
+          null => !fitness.contains(p.category),
+          _ => scoped.contains(p.category),
+        };
+  });
 
   @override
   void dispose() {
@@ -99,14 +103,14 @@ class _ProductsViewState extends State<_ProductsView> {
           ],
         ),
         const SizedBox(height: AdminConstants.spacingLg),
-        FutureBuilder<Set<String>?>(
-          future: _scopeIds,
+        FutureBuilder<bool Function(Product)>(
+          future: _belongs,
           builder: (context, scopeSnap) => BlocBuilder<ProductsCubit, ProductsState>(
           builder: (context, state) {
             if (scopeSnap.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
-            final scopeIds = scopeSnap.data;
+            final belongs = scopeSnap.data ?? ((Product _) => true);
             if (state.status == ProductsStatus.loading ||
                 state.status == ProductsStatus.initial) {
               return const Padding(
@@ -123,7 +127,7 @@ class _ProductsViewState extends State<_ProductsView> {
             // The store tab and the loyalty gifts tab each list their own products.
             final products = state.products
                 .where((p) => p.pricing == widget.pricingMode && !p.dealOnly)
-                .where((p) => scopeIds == null || scopeIds.contains(p.category))
+                .where(belongs)
                 .where((p) => _query.isEmpty || p.name.contains(_query))
                 .toList();
             final cubit = context.read<ProductsCubit>();

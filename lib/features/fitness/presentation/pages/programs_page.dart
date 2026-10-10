@@ -7,13 +7,19 @@ import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
-import '../../../../core/widgets/admin_data_table.dart';
+import '../../../../core/widgets/admin_card.dart';
+import '../../../../core/widgets/admin_confirm_dialog.dart';
+import '../../../../core/widgets/admin_status_chip.dart';
 import '../../data/repository/fitness_repository.dart';
+import '../../domain/entities/fitness_section.dart';
 import '../../domain/entities/health_program.dart';
 import '../cubits/programs_cubit.dart';
 import '../cubits/programs_state.dart';
 import 'program_form_page.dart';
 
+/// The four sections, each with the questions the specialist asks before
+/// building a personal plan. Programs saved under other ids (made before
+/// the sections were fixed) are listed below so they can be removed.
 class ProgramsPage extends StatelessWidget {
   const ProgramsPage({super.key});
 
@@ -29,113 +35,111 @@ class ProgramsPage extends StatelessWidget {
 class _ProgramsView extends StatelessWidget {
   const _ProgramsView();
 
-  void _openForm(BuildContext context, ProgramsCubit cubit, {HealthProgram? program}) {
+  void _edit(BuildContext context, HealthProgram program) {
+    final cubit = context.read<ProgramsCubit>();
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => BlocProvider.value(value: cubit, child: ProgramFormPage(program: program))),
     );
   }
 
-  void _confirmDelete(BuildContext context, ProgramsCubit cubit, HealthProgram program) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: AdminColors.surface,
-        child: Padding(
-          padding: const EdgeInsets.all(AdminConstants.spacingLg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(AdminStrings.deleteConfirm, style: AdminTextStyles.body),
-              const SizedBox(height: AdminConstants.spacingLg),
-              Row(
-                children: [
-                  Expanded(
-                    child: AdminButton(
-                      label: AdminStrings.delete,
-                      kind: AdminButtonKind.danger,
-                      onPressed: () {
-                        cubit.deleteProgram(program.id);
-                        Navigator.of(dialogContext).pop();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AdminConstants.spacingSm),
-                  Expanded(
-                    child: AdminButton(
-                      label: AdminStrings.cancel,
-                      kind: AdminButtonKind.secondary,
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _delete(BuildContext context, HealthProgram program) async {
+    final cubit = context.read<ProgramsCubit>();
+    if (await showAdminConfirm(context, title: AdminStrings.delete, message: AdminStrings.deleteConfirm)) {
+      await cubit.deleteProgram(program.id);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+    return BlocBuilder<ProgramsCubit, ProgramsState>(
+      builder: (context, state) {
+        if (state.status == ProgramsStatus.loading || state.status == ProgramsStatus.initial) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: AdminConstants.spacingXl),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (state.status == ProgramsStatus.error) {
+          return Center(child: Text(state.errorMessage ?? AdminStrings.somethingWentWrong));
+        }
+
+        final sections = state.programs.where((p) => FitnessSection.byId(p.id) != null).toList();
+        final legacy = state.programs.where((p) => FitnessSection.byId(p.id) == null).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Builder(
-              builder: (context) => AdminButton(
-                label: AdminStrings.addProgram,
-                icon: Icons.add,
-                onPressed: () => _openForm(context, context.read<ProgramsCubit>()),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AdminConstants.spacingLg),
-        BlocBuilder<ProgramsCubit, ProgramsState>(
-          builder: (context, state) {
-            if (state.status == ProgramsStatus.loading || state.status == ProgramsStatus.initial) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: AdminConstants.spacingXl),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (state.status == ProgramsStatus.error) {
-              return Center(child: Text(state.errorMessage ?? AdminStrings.somethingWentWrong));
-            }
-
-            final programs = state.programs;
-            final cubit = context.read<ProgramsCubit>();
-
-            return AdminDataTable(
-              emptyMessage: AdminStrings.noData,
-              rowCount: programs.length,
-              columns: const [
-                AdminColumn(AdminStrings.programTitle, flex: 3),
-                AdminColumn(AdminStrings.fieldsCount, flex: 2),
-                AdminColumn(AdminStrings.coachWhatsapp, flex: 2),
-                AdminColumn('', flex: 1),
+            Text(AdminStrings.fitnessSectionsHint, style: AdminTextStyles.caption),
+            const SizedBox(height: AdminConstants.spacingMd),
+            Wrap(
+              spacing: AdminConstants.spacingMd,
+              runSpacing: AdminConstants.spacingMd,
+              children: [
+                for (final p in sections)
+                  SizedBox(width: 300, child: _SectionCard(program: p, onEdit: () => _edit(context, p))),
               ],
-              cellsBuilder: (index) {
-                final program = programs[index];
-                return [
-                  Text(program.title, style: AdminTextStyles.caption),
-                  Text('${program.fields.length}', style: AdminTextStyles.caption),
-                  Text(program.coachWhatsappUrl.isEmpty ? AdminStrings.none : program.coachWhatsappUrl,
-                      style: AdminTextStyles.caption, overflow: TextOverflow.ellipsis),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: AdminColors.danger),
-                    onPressed: () => _confirmDelete(context, cubit, program),
-                  ),
-                ];
-              },
-              onRowTap: (index) => _openForm(context, cubit, program: programs[index]),
-            );
-          },
+            ),
+            if (legacy.isNotEmpty) ...[
+              const SizedBox(height: AdminConstants.spacingXl),
+              AdminCard(
+                title: AdminStrings.legacyPrograms,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(AdminStrings.legacyProgramsHint, style: AdminTextStyles.caption),
+                    const SizedBox(height: AdminConstants.spacingSm),
+                    for (final p in legacy)
+                      Row(
+                        children: [
+                          Expanded(child: Text(p.title, style: AdminTextStyles.body)),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18, color: AdminColors.danger),
+                            onPressed: () => _delete(context, p),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final HealthProgram program;
+  final VoidCallback onEdit;
+
+  const _SectionCard({required this.program, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = program.fields.isNotEmpty;
+    return AdminCard(
+      title: program.title,
+      actions: [
+        AdminStatusChip(
+          label: ready ? AdminStrings.sectionLive : AdminStrings.sectionNoQuestions,
+          color: ready ? AdminColors.success : AdminColors.warning,
         ),
       ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('${AdminStrings.fieldsCount}: ${program.fields.length}', style: AdminTextStyles.caption),
+          const SizedBox(height: AdminConstants.spacingXs),
+          Text(
+            '${AdminStrings.coachWhatsapp}: ${program.coachWhatsappUrl.isEmpty ? AdminStrings.none : program.coachWhatsappUrl}',
+            style: AdminTextStyles.caption,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: AdminConstants.spacingMd),
+          AdminButton(label: AdminStrings.editQuestions, icon: Icons.edit_note, onPressed: onEdit),
+        ],
+      ),
     );
   }
 }

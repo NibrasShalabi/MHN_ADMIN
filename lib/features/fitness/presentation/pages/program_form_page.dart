@@ -17,9 +17,10 @@ import '../widgets/field_builder.dart';
 import '../widgets/form_preview.dart';
 
 class ProgramFormPage extends StatefulWidget {
-  final HealthProgram? program;
+  /// One of the four sections (saved or still empty) — always given.
+  final HealthProgram program;
 
-  const ProgramFormPage({super.key, this.program});
+  const ProgramFormPage({super.key, required this.program});
 
   @override
   State<ProgramFormPage> createState() => _ProgramFormPageState();
@@ -32,17 +33,16 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
   late List<DynamicFormField> _fields;
   late Set<String> _suggestedIds;
 
-  bool get _isEditing => widget.program != null;
 
   @override
   void initState() {
     super.initState();
     final p = widget.program;
-    _titleController = TextEditingController(text: p?.title ?? '');
-    _introController = TextEditingController(text: p?.intro ?? '');
-    _whatsappController = TextEditingController(text: p?.coachWhatsappUrl ?? '');
-    _fields = [...?p?.fields];
-    _suggestedIds = {...?p?.suggestedProgramIds};
+    _titleController = TextEditingController(text: p.title);
+    _introController = TextEditingController(text: p.intro);
+    _whatsappController = TextEditingController(text: p.coachWhatsappUrl);
+    _fields = [...p.fields];
+    _suggestedIds = {...p.suggestedProgramIds};
   }
 
   @override
@@ -55,7 +55,7 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
 
   void _save() {
     final program = HealthProgram(
-      id: widget.program?.id ?? 'HP-${DateTime.now().millisecondsSinceEpoch}',
+      id: widget.program.id,
       title: _titleController.text.trim(),
       intro: _introController.text.trim(),
       fields: _fields,
@@ -63,14 +63,14 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
       suggestedProgramIds: _suggestedIds.toList(),
     );
     final cubit = context.read<ProgramsCubit>();
-    _isEditing ? cubit.updateProgram(program) : cubit.addProgram(program);
+    cubit.saveProgram(program);
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final otherPrograms =
-    context.watch<ProgramsCubit>().state.programs.where((p) => p.id != widget.program?.id).toList();
+    context.watch<ProgramsCubit>().state.programs.where((p) => p.id != widget.program.id).toList();
 
     return Scaffold(
       backgroundColor: AdminColors.canvas,
@@ -78,7 +78,7 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
         backgroundColor: AdminColors.surface,
         elevation: 0,
         iconTheme: const IconThemeData(color: AdminColors.gold),
-        title: Text(_isEditing ? AdminStrings.editProgram : AdminStrings.addProgram, style: AdminTextStyles.pageTitle),
+        title: Text(AdminStrings.editProgram, style: AdminTextStyles.pageTitle),
       ),
       body: Align(
         alignment: Alignment.topCenter,
