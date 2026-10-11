@@ -1,79 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
+import '../../../../core/error/admin_error.dart';
 import '../../../../core/widgets/admin_data_table.dart';
 import '../../data/repository/loyalty_repository.dart';
-import '../../domain/entities/loyalty_transaction.dart';
-import '../cubits/loyalty_ledger_cubit.dart';
-import '../cubits/loyalty_ledger_state.dart';
+import '../../domain/entities/loyalty_leader.dart';
 
-class LoyaltyLeaderboardPage extends StatelessWidget {
+/// Top balances straight from the customers' accounts.
+class LoyaltyLeaderboardPage extends StatefulWidget {
   const LoyaltyLeaderboardPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => LoyaltyLedgerCubit(GetIt.instance<LoyaltyRepository>())..load(),
-      child: const _LeaderboardView(),
-    );
-  }
+  State<LoyaltyLeaderboardPage> createState() => _LoyaltyLeaderboardPageState();
 }
 
-class _LeaderEntry {
-  final String name;
-  final String phone;
-  final int totalPoints;
-
-  const _LeaderEntry({required this.name, required this.phone, required this.totalPoints});
-}
-
-class _LeaderboardView extends StatelessWidget {
-  const _LeaderboardView();
-
-  // Top 3 get a medal tone instead of the plain rank number — the same
-  // "the number carries the meaning" idea as the ledger's +/- coloring.
+class _LoyaltyLeaderboardPageState extends State<LoyaltyLeaderboardPage> {
+  // Top 3 get a medal tone instead of the plain rank number.
   static const List<Color> _medalColors = [
     AdminColors.gold,
     Color(0xFFC0C0C0),
     Color(0xFFCD7F32),
   ];
 
-  List<_LeaderEntry> _rank(List<LoyaltyTransaction> transactions) {
-    final totals = <String, int>{};
-    final names = <String, String>{};
-    for (final t in transactions) {
-      totals.update(t.userPhone, (v) => v + t.points, ifAbsent: () => t.points);
-      names[t.userPhone] = t.userName;
-    }
-    final entries = totals.entries
-        .map((e) => _LeaderEntry(name: names[e.key] ?? '', phone: e.key, totalPoints: e.value))
-        .where((e) => e.totalPoints > 0)
-        .toList()
-      ..sort((a, b) => b.totalPoints.compareTo(a.totalPoints));
-    return entries;
-  }
+  late final Future<List<LoyaltyLeader>> _leaders = GetIt.instance<LoyaltyRepository>().topBalances();
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LoyaltyLedgerCubit, LoyaltyLedgerState>(
-      builder: (context, state) {
-        if (state.status == LedgerStatus.loading || state.status == LedgerStatus.initial) {
+    return FutureBuilder<List<LoyaltyLeader>>(
+      future: _leaders,
+      builder: (context, snap) {
+        if (snap.hasError) return Center(child: Text(AdminError.message(snap.error!)));
+        if (!snap.hasData) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: AdminConstants.spacingXl),
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        if (state.status == LedgerStatus.error) {
-          return Center(child: Text(state.errorMessage ?? AdminStrings.somethingWentWrong));
-        }
-
-        final leaders = _rank(state.transactions);
-
+        final leaders = snap.data!;
         return AdminDataTable(
           emptyMessage: AdminStrings.noData,
           rowCount: leaders.length,
@@ -96,10 +63,7 @@ class _LeaderboardView extends StatelessWidget {
               ),
               Text(leader.name, style: AdminTextStyles.caption),
               Text(leader.phone, style: AdminTextStyles.caption),
-              Text(
-                '${leader.totalPoints}',
-                style: AdminTextStyles.caption.copyWith(color: AdminColors.gold),
-              ),
+              Text('${leader.points}', style: AdminTextStyles.caption.copyWith(color: AdminColors.gold)),
             ];
           },
         );

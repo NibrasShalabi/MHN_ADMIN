@@ -9,6 +9,7 @@ import '../../../messages/data/repository/customer_messages.dart';
 import '../../../messages/domain/entities/message_event.dart';
 import '../../../shipping/domain/entities/shipping_rates.dart';
 import 'orders_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 /// Firebase implementation لـ OrdersRepository في الـ Admin
 ///
@@ -23,12 +24,37 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
 
   // ===== Orders =====
 
+  static const int pageSize = 100;
+
+  CollectionReference<Map<String, dynamic>> get _orders => _db.collection('orders');
+
+  /// Newest first, [pageSize] at a time; [before] continues after the last
+  /// loaded order. The first page is shared through [AdminCache].
   @override
-  Future<List<Order>> getOrders() async {
-    final snap = await _db
-        .collection('orders')
-        .orderBy('createdAt', descending: true)
-        .get();
+  Future<List<Order>> getOrders({DateTime? before}) {
+    final q = _orders.orderBy('createdAt', descending: true).limit(pageSize);
+    if (before != null) return _load(q.startAfter([Timestamp.fromDate(before)]));
+    return AdminCache.get('orders.first', () => _load(q));
+  }
+
+  /// Everything since [since] — what analytics needs, without reading the
+  /// whole history.
+  @override
+  Future<List<Order>> getOrdersSince(DateTime since) {
+    final day = DateTime(since.year, since.month, since.day);
+    return AdminCache.get('orders.since.$day', () => _load(
+        _orders.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(day)).orderBy('createdAt', descending: true)));
+  }
+
+  /// One aggregate read per 1000 orders instead of reading them.
+  @override
+  Future<int> countByStatus(OrderStatus status) => AdminCache.get('orders.count.${status.name}', () async {
+        final agg = await _orders.where('status', isEqualTo: status.name).count().get();
+        return agg.count ?? 0;
+      });
+
+  Future<List<Order>> _load(Query<Map<String, dynamic>> query) async {
+    final snap = await query.get();
     final orders = snap.docs.map(_orderFromDoc).toList();
 
     // Older orders don't carry the customer snapshot — fetch those users
@@ -54,6 +80,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
     ];
   }
 
+
   /// Status change in one transaction, with the loyalty side-effects:
   /// - confirmed → points are charged once (`pointsDeducted` on the order)
   /// - cancelled after a charge → refunded once (`pointsRefunded`)
@@ -66,6 +93,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
         String? note,
         bool notifyCustomer = false,
       }) async {
+    AdminCache.clear();
     final orderRef = _db.collection('orders').doc(orderId);
     await _messages.templates();
 
@@ -187,6 +215,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
   /// Rejecting tells the customer why, through their messages, and lets
   /// them send a new TXID/receipt from the order card.
   Future<void> updatePaymentStatus(Order order, PaymentStatus status, {String? reason}) async {
+    AdminCache.clear();
     final rejected = status == PaymentStatus.rejected;
     final batch = _db.batch()
       ..update(_db.collection('orders').doc(order.id), {
@@ -259,17 +288,18 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
   // ===== Batches =====
 
   @override
-  Future<List<OrderBatch>> getBatches() async {
+  Future<List<OrderBatch>> getBatches() => AdminCache.get('FirebaseAdminOrdersRepository.getBatches', () async {
     final snap = await _db
         .collection('order_batches')
         .orderBy('createdAt', descending: true)
         .limit(100)
         .get();
     return snap.docs.map(_batchFromDoc).toList();
-  }
+  });
 
   @override
   Future<void> createBatch(String name, List<String> orderIds) async {
+    AdminCache.clear();
     await _db.collection('order_batches').add({
       'name': name,
       'orderIds': orderIds,
@@ -279,6 +309,7 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
 
   @override
   Future<void> deleteBatch(String id) async {
+    AdminCache.clear();
     await _db.collection('order_batches').doc(id).delete();
   }
 

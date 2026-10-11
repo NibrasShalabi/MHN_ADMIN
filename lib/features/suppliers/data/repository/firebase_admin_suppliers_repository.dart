@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/data/catalog_version.dart';
 import '../../domain/entities/supplier.dart';
 import 'suppliers_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminSuppliersRepository implements SuppliersRepository {
   final FirebaseFirestore _db;
@@ -12,24 +13,32 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
   CollectionReference<Map<String, dynamic>> get _suppliers => _db.collection('suppliers');
 
   @override
-  Future<List<Supplier>> getSuppliers() async {
+  Future<List<Supplier>> getSuppliers() => AdminCache.get('FirebaseAdminSuppliersRepository.getSuppliers', () async {
     final snap = await _suppliers.get();
     return snap.docs.map(_fromDoc).toList();
-  }
+  });
 
   @override
-  Future<void> addSupplier(Supplier supplier) => CatalogVersion.commit(
+  Future<void> addSupplier(Supplier supplier) {
+    AdminCache.clear();
+    return CatalogVersion.commit(
       _db,
       (b) => b.set(
           _suppliers.doc(supplier.id), {..._toMap(supplier), 'logoUrl': null, 'createdAt': FieldValue.serverTimestamp()}));
+  }
 
   /// Merge keeps fields this form doesn't own (logoUrl, ownerUid).
   @override
-  Future<void> updateSupplier(Supplier supplier) =>
-      CatalogVersion.commit(_db, (b) => b.set(_suppliers.doc(supplier.id), _toMap(supplier), SetOptions(merge: true)));
+  Future<void> updateSupplier(Supplier supplier) {
+    AdminCache.clear();
+    return CatalogVersion.commit(_db, (b) => b.set(_suppliers.doc(supplier.id), _toMap(supplier), SetOptions(merge: true)));
+  }
 
   @override
-  Future<void> deleteSupplier(String id) => CatalogVersion.commit(_db, (b) => b.delete(_suppliers.doc(id)));
+  Future<void> deleteSupplier(String id) {
+    AdminCache.clear();
+    return CatalogVersion.commit(_db, (b) => b.delete(_suppliers.doc(id)));
+  }
 
   Map<String, dynamic> _toMap(Supplier s) => {
         'name': s.name,

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/deal_promotion.dart';
 import 'deals_admin_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 /// Same `promotions` collection the client app reads.
 class FirebaseAdminDealsRepository implements DealsAdminRepository {
@@ -13,17 +14,18 @@ class FirebaseAdminDealsRepository implements DealsAdminRepository {
   FirebaseAdminDealsRepository(this._db);
 
   @override
-  Future<List<DealPromotion>> getPromotions() async {
+  Future<List<DealPromotion>> getPromotions() => AdminCache.get('FirebaseAdminDealsRepository.getPromotions', () async {
     final snap = await _db
         .collection('promotions')
         .orderBy('startTime', descending: true)
         .limit(_historyLimit)
         .get();
     return snap.docs.map(_fromDoc).toList();
-  }
+  });
 
   @override
   Future<void> addPromotion(DealPromotion promotion) async {
+    AdminCache.clear();
     await _db.collection('promotions').doc(promotion.id).set({
       'productId': promotion.productId,
       'productName': promotion.productName,
@@ -37,6 +39,7 @@ class FirebaseAdminDealsRepository implements DealsAdminRepository {
 
   @override
   Future<void> cancelPromotion(String id) async {
+    AdminCache.clear();
     await _db.collection('promotions').doc(id).update({
       'isActive': false,
     });

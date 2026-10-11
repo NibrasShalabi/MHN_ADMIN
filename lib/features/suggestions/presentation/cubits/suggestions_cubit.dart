@@ -1,5 +1,6 @@
 import '../../../../core/bloc/safe_cubit.dart';
 
+import '../../data/repository/firebase_admin_suggestions_repository.dart';
 import '../../data/repository/suggestions_repository.dart';
 import '../../domain/entities/product_suggestion.dart';
 import 'suggestions_state.dart';
@@ -14,9 +15,28 @@ class SuggestionsCubit extends SafeCubit<SuggestionsState> {
     emit(state.copyWith(status: SuggestionsStatus.loading));
     try {
       final suggestions = await _repository.getSuggestions();
-      emit(state.copyWith(status: SuggestionsStatus.loaded, suggestions: suggestions));
+      emit(state.copyWith(
+        status: SuggestionsStatus.loaded,
+        suggestions: suggestions,
+        hasMore: suggestions.length == FirebaseAdminSuggestionsRepository.pageSize,
+      ));
     } catch (e) {
       emit(state.copyWith(status: SuggestionsStatus.error, errorMessage: AdminError.message(e)));
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (!state.hasMore || state.loadingMore || state.suggestions.isEmpty) return;
+    emit(state.copyWith(loadingMore: true));
+    try {
+      final more = await _repository.getSuggestions(before: state.suggestions.last.createdAt);
+      emit(state.copyWith(
+        suggestions: [...state.suggestions, ...more],
+        hasMore: more.length == FirebaseAdminSuggestionsRepository.pageSize,
+        loadingMore: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(loadingMore: false, errorMessage: AdminError.message(e)));
     }
   }
 

@@ -3,7 +3,13 @@ import '../../domain/entities/order_batch.dart';
 import '../../domain/entities/order_check.dart';
 
 abstract class OrdersRepository {
-  Future<List<Order>> getOrders();
+  /// Newest first, one page at a time; [before] continues the list.
+  Future<List<Order>> getOrders({DateTime? before});
+
+  /// All orders placed since [since].
+  Future<List<Order>> getOrdersSince(DateTime since);
+
+  Future<int> countByStatus(OrderStatus status);
   Future<void> updateOrderStatus(
       String orderId,
       OrderStatus status, {

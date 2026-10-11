@@ -21,6 +21,8 @@ class AdminStrings {
   static const String noData = 'لا توجد بيانات';
   static const String somethingWentWrong = 'حدث خطأ، حاول لاحقاً';
   static const String broadcastForNew = 'تظهر كمان للزبائن يلي بيسجّلوا بعدين (ترحيب، سياسة…)';
+  static const String loadMore = 'تحميل المزيد';
+  static const String analyticsWindow = 'الأرقام عن آخر 90 يوم';
   static const String errorNetwork = 'ما في اتصال بالإنترنت، تأكد من الشبكة وحاول مرة تانية';
   static const String errorPermission = 'ما عندك صلاحية لهالعملية — سجّل دخول بحساب الأدمن';
   static const String errorNotFound = 'العنصر غير موجود، يمكن انحذف';

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/data/catalog_version.dart';
 import '../../domain/entities/promo_banner.dart';
 import 'promo_banners_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
   final FirebaseFirestore _db;
@@ -10,7 +11,7 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
   FirebaseAdminPromoBannersRepository(this._db);
 
   @override
-  Future<List<PromoBanner>> getBanners() async {
+  Future<List<PromoBanner>> getBanners() => AdminCache.get('FirebaseAdminPromoBannersRepository.getBanners', () async {
     final snap = await _db
         .collection('banners')
         .where('isActive', isEqualTo: true)
@@ -18,10 +19,11 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
     final banners = snap.docs.map(_fromDoc).toList()
       ..sort((a, b) => a.order.compareTo(b.order));
     return banners;
-  }
+  });
 
   @override
   Future<void> addBanner(PromoBanner banner) async {
+    AdminCache.clear();
     await CatalogVersion.commit(_db, (b) => b.set(_db.collection('banners').doc(banner.id), {
           ..._toMap(banner),
           'imageUrl': null, // لاحقاً بعد Storage
@@ -31,11 +33,13 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
 
   @override
   Future<void> updateBanner(PromoBanner banner) async {
+    AdminCache.clear();
     await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(banner.id), _toMap(banner)));
   }
 
   @override
   Future<void> deleteBanner(String id) async {
+    AdminCache.clear();
     await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(id), {'isActive': false}));
   }
 

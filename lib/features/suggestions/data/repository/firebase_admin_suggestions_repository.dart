@@ -4,6 +4,7 @@ import '../../../messages/data/repository/customer_messages.dart';
 import '../../../messages/domain/entities/message_event.dart';
 import '../../domain/entities/product_suggestion.dart';
 import 'suggestions_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
   static const int _whereInLimit = 30;
@@ -16,8 +17,16 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
   CollectionReference<Map<String, dynamic>> get _suggestions => _db.collection('productSuggestions');
 
   @override
-  Future<List<ProductSuggestion>> getSuggestions() async {
-    final snap = await _suggestions.orderBy('submittedAt', descending: true).limit(150).get();
+  Future<List<ProductSuggestion>> getSuggestions({DateTime? before}) {
+    final q = _suggestions.orderBy('submittedAt', descending: true).limit(pageSize);
+    if (before != null) return _load(q.startAfter([Timestamp.fromDate(before)]));
+    return AdminCache.get('suggestions.first', () => _load(q));
+  }
+
+  static const int pageSize = 100;
+
+  Future<List<ProductSuggestion>> _load(Query<Map<String, dynamic>> query) async {
+    final snap = await query.get();
 
     // Newer suggestions carry the name; older ones are looked up 30 users per read.
     final missing = {
@@ -50,9 +59,11 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
     ];
   }
 
+
   /// Approval rewards the customer once, per config/loyaltyRules, and tells them.
   @override
   Future<void> approve(String id) async {
+    AdminCache.clear();
     final ref = _suggestions.doc(id);
     await _messages.templates();
     await _db.runTransaction((tx) async {
@@ -86,6 +97,7 @@ class FirebaseAdminSuggestionsRepository implements SuggestionsRepository {
 
   @override
   Future<void> reject(String id, String reason) async {
+    AdminCache.clear();
     final doc = await _suggestions.doc(id).get();
     final userId = doc.data()?['userId'] as String?;
     final productName = doc.data()?['productName'] as String? ?? '';

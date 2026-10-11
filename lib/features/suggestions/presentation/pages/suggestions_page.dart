@@ -14,6 +14,7 @@ import '../cubits/suggestions_cubit.dart';
 import '../cubits/suggestions_state.dart';
 import '../widgets/suggestion_details_panel.dart';
 import '../widgets/suggestion_status_x.dart';
+import '../../../../core/widgets/admin_load_more.dart';
 
 class SuggestionsPage extends StatelessWidget {
   const SuggestionsPage({super.key});
@@ -50,7 +51,10 @@ class _SuggestionsView extends StatelessWidget {
         final suggestions = state.suggestions;
         final cubit = context.read<SuggestionsCubit>();
 
-        return AdminDataTable(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AdminDataTable(
           emptyMessage: AdminStrings.noData,
           rowCount: suggestions.length,
           columns: const [
@@ -76,6 +80,9 @@ class _SuggestionsView extends StatelessWidget {
               child: SuggestionDetailsPanel(suggestion: suggestion, cubit: cubit),
             );
           },
+        ),
+            AdminLoadMore(hasMore: state.hasMore, loading: state.loadingMore, onPressed: context.read<SuggestionsCubit>().loadMore),
+          ],
         );
       },
     );

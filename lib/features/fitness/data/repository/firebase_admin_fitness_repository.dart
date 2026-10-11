@@ -6,6 +6,7 @@ import '../../domain/entities/dynamic_form_field.dart';
 import '../../domain/entities/fitness_submission.dart';
 import '../../domain/entities/health_program.dart';
 import 'fitness_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminFitnessRepository implements FitnessRepository {
   static const int pageSize = 100;
@@ -23,34 +24,40 @@ class FirebaseAdminFitnessRepository implements FitnessRepository {
   /// Sorted here, not with orderBy('order'): Firestore drops documents that
   /// lack the ordered field, which hid every program saved before it existed.
   @override
-  Future<List<HealthProgram>> getPrograms() async {
+  Future<List<HealthProgram>> getPrograms() => AdminCache.get('FirebaseAdminFitnessRepository.getPrograms', () async {
     final snap = await _programs.get();
     final docs = [...snap.docs]
       ..sort((a, b) => ((a.data()['order'] as num?) ?? 1 << 30).compareTo((b.data()['order'] as num?) ?? 1 << 30));
     return docs.map(_programFromDoc).toList();
+  });
+
+  @override
+  Future<void> saveProgram(HealthProgram program, {required int order}) {
+    AdminCache.clear();
+    return _programs.doc(program.id).set({..._programToMap(program), 'order': order});
   }
 
   @override
-  Future<void> saveProgram(HealthProgram program, {required int order}) =>
-      _programs.doc(program.id).set({..._programToMap(program), 'order': order});
-
-  @override
-  Future<void> deleteProgram(String id) => _programs.doc(id).delete();
+  Future<void> deleteProgram(String id) {
+    AdminCache.clear();
+    return _programs.doc(id).delete();
+  }
 
   // ===== Submissions =====
 
   @override
-  Future<List<FitnessSubmission>> getSubmissions() async {
+  Future<List<FitnessSubmission>> getSubmissions() => AdminCache.get('FirebaseAdminFitnessRepository.getSubmissions', () async {
     final snap = await _db
         .collectionGroup('submissions')
         .orderBy('submittedAt', descending: true)
         .limit(pageSize)
         .get();
     return snap.docs.map(_submissionFromDoc).toList();
-  }
+  });
 
   @override
   Future<void> updateStatus(FitnessSubmission submission, SubmissionStatus status) async {
+    AdminCache.clear();
     final batch = _db.batch()..update(_db.doc(submission.path), {'status': status.key});
     if (status == SubmissionStatus.contacted && submission.status != status) {
       await _addMessage(batch, MessageEvent.fitnessContacted, submission);
@@ -60,6 +67,7 @@ class FirebaseAdminFitnessRepository implements FitnessRepository {
 
   @override
   Future<void> reply(FitnessSubmission submission, String text) async {
+    AdminCache.clear();
     final batch = _db.batch()
       ..update(_db.doc(submission.path), {
         'status': SubmissionStatus.contacted.key,
@@ -74,6 +82,7 @@ class FirebaseAdminFitnessRepository implements FitnessRepository {
 
   Future<void> _addMessage(WriteBatch batch, MessageEvent event, FitnessSubmission s,
       {String? reply, bool force = false}) async {
+    AdminCache.clear();
     if (s.userId == null) return;
     await _messages.templates();
     final message = _messages.compose(event, userId: s.userId!, force: force, values: {
@@ -90,8 +99,10 @@ class FirebaseAdminFitnessRepository implements FitnessRepository {
       (await _config.get()).data()?['specialistWhatsapp'] as String? ?? '';
 
   @override
-  Future<void> setSpecialistWhatsapp(String number) =>
-      _config.set({'specialistWhatsapp': number.trim()}, SetOptions(merge: true));
+  Future<void> setSpecialistWhatsapp(String number) {
+    AdminCache.clear();
+    return _config.set({'specialistWhatsapp': number.trim()}, SetOptions(merge: true));
+  }
 
   // ===== Mappers =====
 

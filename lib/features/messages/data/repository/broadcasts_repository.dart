@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/broadcast.dart';
+import '../../../../core/data/admin_cache.dart';
 
 /// Messages to every customer. A customer sees the ones sent after she
 /// joined, plus those marked [Broadcast.forNewCustomers].
@@ -31,16 +32,25 @@ class BroadcastsRepository {
     ];
   }
 
-  Future<void> send({required String title, required String body, bool forNewCustomers = false}) =>
-      _messages.add({
+  Future<void> send({required String title, required String body, bool forNewCustomers = false}) {
+    AdminCache.clear();
+    return _messages.add({
         'type': 'broadcast',
         'title': title.trim(),
         'body': body.trim(),
         'sentAt': FieldValue.serverTimestamp(),
         'forNewCustomers': forNewCustomers,
       });
+  }
 
-  Future<void> setForNewCustomers(String id, bool on) => _messages.doc(id).update({'forNewCustomers': on});
+  Future<void> setForNewCustomers(String id, bool on) {
+    AdminCache.clear();
+    return _messages.doc(id).update({'forNewCustomers': on});
+  }
 
-  Future<void> delete(String id) => _messages.doc(id).delete();
+  Future<void> delete(String id) {
+    AdminCache.clear();
+    return _messages.doc(id).delete();
+  }
+
 }

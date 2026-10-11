@@ -5,6 +5,7 @@ import '../../domain/entities/product.dart';
 import '../../domain/entities/product_private.dart';
 import '../../../presets/domain/entities/presets.dart';
 import 'products_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminProductsRepository implements ProductsRepository {
   final FirebaseFirestore _db;
@@ -14,12 +15,12 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   static const String _private = 'productsPrivate';
 
   @override
-  Future<List<Product>> getProducts() async {
+  Future<List<Product>> getProducts() => AdminCache.get('FirebaseAdminProductsRepository.getProducts', () async {
     final snap = await _db.collection('products').get();
     await _migrateLegacyCostPrices(snap.docs);
     await _migrateLegacyColors(snap.docs);
     return snap.docs.map(_fromDoc).toList();
-  }
+  });
 
   @override
   Future<ProductPrivate> getPrivate(String productId) async {
@@ -28,13 +29,14 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   }
 
   @override
-  Future<Map<String, ProductPrivate>> getAllPrivate() async {
+  Future<Map<String, ProductPrivate>> getAllPrivate() => AdminCache.get('FirebaseAdminProductsRepository.getAllPrivate', () async {
     final snap = await _db.collection(_private).get();
     return {for (final doc in snap.docs) doc.id: _privateFromMap(doc.data())};
-  }
+  });
 
   @override
   Future<void> addProduct(Product product, ProductPrivate private) async {
+    AdminCache.clear();
     final batch = _db.batch()
       ..set(_db.collection('products').doc(product.id), {
         ...await _toMap(product),
@@ -50,6 +52,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   /// images or make an old product look new.
   @override
   Future<void> updateProduct(Product product, ProductPrivate private) async {
+    AdminCache.clear();
     final batch = _db.batch()
       ..update(_db.collection('products').doc(product.id), {
         ...await _toMap(product),
@@ -65,6 +68,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
 
   @override
   Future<void> deleteProduct(String id) async {
+    AdminCache.clear();
     final batch = _db.batch()
       ..delete(_db.collection('products').doc(id))
       ..delete(_db.collection(_private).doc(id));
@@ -75,6 +79,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   /// One-time, self-healing: older products kept costPrice in the public
   /// doc. Moves it to productsPrivate the first time the list loads.
   Future<void> _migrateLegacyCostPrices(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    AdminCache.clear();
     final legacy = docs.where((d) => d.data().containsKey('costPrice')).toList();
     if (legacy.isEmpty) return;
 
@@ -185,6 +190,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   /// One-time, self-healing: older products stored the colour id as its
   /// name with a black swatch. Rewrites them the first time the list loads.
   Future<void> _migrateLegacyColors(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    AdminCache.clear();
     final legacy = [
       for (final d in docs)
         if ((d.data()['colors'] as List? ?? const []).any((c) => (c as Map)['id'] == null)) d,

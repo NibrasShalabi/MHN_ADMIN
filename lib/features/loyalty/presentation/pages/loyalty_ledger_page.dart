@@ -15,6 +15,7 @@ import '../../data/repository/loyalty_repository.dart';
 import '../cubits/loyalty_ledger_cubit.dart';
 import '../cubits/loyalty_ledger_state.dart';
 import '../widgets/correction_form_panel.dart';
+import '../../../../core/widgets/admin_load_more.dart';
 
 class LoyaltyLedgerPage extends StatelessWidget {
   const LoyaltyLedgerPage({super.key});
@@ -101,7 +102,10 @@ class _LoyaltyLedgerViewState extends State<_LoyaltyLedgerView> {
               balancesByPhone.update(t.userPhone, (v) => v + t.points, ifAbsent: () => t.points);
             }
 
-            return AdminDataTable(
+            return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AdminDataTable(
               emptyMessage: AdminStrings.noData,
               rowCount: transactions.length,
               columns: const [
@@ -127,7 +131,10 @@ class _LoyaltyLedgerViewState extends State<_LoyaltyLedgerView> {
                   Text('${balancesByPhone[t.userPhone] ?? 0}', style: AdminTextStyles.caption),
                 ];
               },
-            );
+            ),
+            AdminLoadMore(hasMore: state.hasMore, loading: state.loadingMore, onPressed: context.read<LoyaltyLedgerCubit>().loadMore),
+          ],
+        );
           },
         ),
       ],

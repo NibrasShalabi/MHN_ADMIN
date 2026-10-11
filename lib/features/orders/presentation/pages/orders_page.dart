@@ -23,6 +23,7 @@ import '../widgets/order_status_x.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_field.dart';
 import '../../../../core/widgets/admin_text_input.dart';
+import '../../../../core/widgets/admin_load_more.dart';
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
@@ -288,6 +289,7 @@ class _OrdersViewState extends State<_OrdersView> {
                     );
                   },
                 ),
+                AdminLoadMore(hasMore: state.hasMore, loading: state.loadingMore, onPressed: cubit.loadMore),
               ],
             );
           },

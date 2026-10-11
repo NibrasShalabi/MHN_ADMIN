@@ -1,5 +1,6 @@
 import '../../../../core/bloc/safe_cubit.dart';
 
+import '../../data/repository/firebase_admin_orders_repository.dart';
 import '../../data/repository/orders_repository.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/insufficient_points_exception.dart';
@@ -20,9 +21,29 @@ class OrdersCubit extends SafeCubit<OrdersState> {
     try {
       final orders = await _repository.getOrders();
       final batches = await _repository.getBatches();
-      emit(state.copyWith(status: OrdersStatus.loaded, orders: orders, batches: batches));
+      emit(state.copyWith(
+        status: OrdersStatus.loaded,
+        orders: orders,
+        batches: batches,
+        hasMore: orders.length == FirebaseAdminOrdersRepository.pageSize,
+      ));
     } catch (e) {
       emit(state.copyWith(status: OrdersStatus.error, errorMessage: AdminError.message(e)));
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (!state.hasMore || state.loadingMore || state.orders.isEmpty) return;
+    emit(state.copyWith(loadingMore: true));
+    try {
+      final more = await _repository.getOrders(before: state.orders.last.orderDate);
+      emit(state.copyWith(
+        orders: [...state.orders, ...more],
+        hasMore: more.length == FirebaseAdminOrdersRepository.pageSize,
+        loadingMore: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(loadingMore: false, errorMessage: AdminError.message(e)));
     }
   }
 

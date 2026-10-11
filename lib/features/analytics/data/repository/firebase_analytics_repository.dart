@@ -41,6 +41,9 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
       this._suppliersRepository,
       );
 
+  /// Analytics covers this window, so its cost stays flat as orders grow.
+  static const Duration window = Duration(days: 90);
+
   List<RankedEntry> _rank(Map<String, num> totals, {int take = 5}) {
     return (totals.entries
         .map((e) => RankedEntry(name: e.key, value: e.value))
@@ -55,7 +58,7 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
   Future<AnalyticsData> getAnalytics() async {
     // جلب كل البيانات parallel — تقليل الـ latency
     final results = await Future.wait([
-      _ordersRepository.getOrders(),
+      _ordersRepository.getOrdersSince(DateTime.now().subtract(window)),
       _supportRepository.getMessages(),
       _suggestionsRepository.getSuggestions(),
       _productsRepository.getProducts(),

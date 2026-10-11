@@ -78,6 +78,8 @@ class _AnalyticsView extends StatelessWidget {
               labelOf: (p) => p.label,
               onChanged: (p) => cubit.setPeriod(p!),
             ),
+            const SizedBox(height: AdminConstants.spacingSm),
+            Text(AdminStrings.analyticsWindow, style: AdminTextStyles.caption),
             const SizedBox(height: AdminConstants.spacingLg),
             _buildFinancialSection(state, daily, previous, currency),
             const SizedBox(height: AdminConstants.spacingLg),

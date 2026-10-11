@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/app_review.dart';
 import 'reviews_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseReviewsRepository implements ReviewsRepository {
   final FirebaseFirestore _db;
@@ -9,7 +10,7 @@ class FirebaseReviewsRepository implements ReviewsRepository {
   FirebaseReviewsRepository(this._db);
 
   @override
-  Future<List<AppReview>> getPendingReviews() async {
+  Future<List<AppReview>> getPendingReviews() => AdminCache.get('FirebaseReviewsRepository.getPendingReviews', () async {
     final snap = await _db
         .collection('ratings')
         .where('isVisible', isEqualTo: false)
@@ -26,11 +27,12 @@ class FirebaseReviewsRepository implements ReviewsRepository {
         isVisible: false,
       );
     }).toList();
-  }
+  });
 
   /// نقل التقييم من ratings → reviews ويعمله visible
   @override
   Future<void> approve(String uid, {String? authorName}) async {
+    AdminCache.clear();
     final ratingDoc = await _db.collection('ratings').doc(uid).get();
     if (!ratingDoc.exists) return;
 
@@ -56,6 +58,7 @@ class FirebaseReviewsRepository implements ReviewsRepository {
   /// رفض التقييم — نحذفه من ratings
   @override
   Future<void> reject(String uid) async {
+    AdminCache.clear();
     await _db.collection('ratings').doc(uid).delete();
   }
 }

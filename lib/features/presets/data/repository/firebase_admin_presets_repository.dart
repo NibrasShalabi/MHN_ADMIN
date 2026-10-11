@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/presets.dart';
 import 'presets_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminPresetsRepository implements PresetsRepository {
   final FirebaseFirestore _db;
@@ -9,7 +10,7 @@ class FirebaseAdminPresetsRepository implements PresetsRepository {
   FirebaseAdminPresetsRepository(this._db);
 
   @override
-  Future<CatalogPresets> getPresets() async {
+  Future<CatalogPresets> getPresets() => AdminCache.get('FirebaseAdminPresetsRepository.getPresets', () async {
     final results = await Future.wait([
       _db.collection('sizeSets').get(),
       _db.collection('paletteColors').get(),
@@ -53,40 +54,47 @@ class FirebaseAdminPresetsRepository implements PresetsRepository {
       colors: colors.isEmpty ? DefaultPresets.colors : colors,
       sizeGuides: sizeGuides.isEmpty ? DefaultPresets.sizeGuides : sizeGuides,
     );
-  }
+  });
 
   @override
   Future<void> addSizeSet(SizeSet set) async {
+    AdminCache.clear();
     await _db.collection('sizeSets').doc(set.id).set({'name': set.name, 'sizes': set.sizes});
   }
 
   @override
   Future<void> updateSizeSet(SizeSet set) async {
+    AdminCache.clear();
     await _db.collection('sizeSets').doc(set.id).update({'name': set.name, 'sizes': set.sizes});
   }
 
   @override
   Future<void> deleteSizeSet(String id) async {
+    AdminCache.clear();
     await _db.collection('sizeSets').doc(id).delete();
   }
 
   @override
   Future<void> addColor(PaletteColor color) async {
+    AdminCache.clear();
     await _db.collection('paletteColors').doc(color.id).set({'name': color.name, 'value': color.value});
   }
 
   @override
   Future<void> updateColor(PaletteColor color) async {
+    AdminCache.clear();
     await _db.collection('paletteColors').doc(color.id).update({'name': color.name, 'value': color.value});
   }
 
   @override
   Future<void> deleteColor(String id) async {
+    AdminCache.clear();
     await _db.collection('paletteColors').doc(id).delete();
   }
 
   @override
   Future<void> addSizeGuide(SizeGuideTemplate guide) async {
+    AdminCache.clear();
     await _db.collection('sizeGuides').doc(guide.id).set({
       'name': guide.name,
       'rows': guide.rows.map((r) => {'size': r.size, 'measurements': r.measurements}).toList(),
@@ -95,6 +103,7 @@ class FirebaseAdminPresetsRepository implements PresetsRepository {
 
   @override
   Future<void> updateSizeGuide(SizeGuideTemplate guide) async {
+    AdminCache.clear();
     await _db.collection('sizeGuides').doc(guide.id).update({
       'name': guide.name,
       'rows': guide.rows.map((r) => {'size': r.size, 'measurements': r.measurements}).toList(),
@@ -103,6 +112,7 @@ class FirebaseAdminPresetsRepository implements PresetsRepository {
 
   @override
   Future<void> deleteSizeGuide(String id) async {
+    AdminCache.clear();
     await _db.collection('sizeGuides').doc(id).delete();
   }
 }

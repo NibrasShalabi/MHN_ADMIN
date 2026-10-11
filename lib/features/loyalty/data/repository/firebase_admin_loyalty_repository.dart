@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/loyalty_rules.dart';
 import '../../domain/entities/loyalty_transaction.dart';
 import 'loyalty_repository.dart';
+import '../../../../core/data/admin_cache.dart';
+import '../../domain/entities/loyalty_leader.dart';
 
 class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
   final FirebaseFirestore _db;
@@ -10,7 +12,7 @@ class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
   FirebaseAdminLoyaltyRepository(this._db);
 
   @override
-  Future<LoyaltyRules> getRules() async {
+  Future<LoyaltyRules> getRules() => AdminCache.get('FirebaseAdminLoyaltyRepository.getRules', () async {
     final doc = await _db.collection('config').doc('loyaltyRules').get();
     if (!doc.exists) return const LoyaltyRules();
     final d = doc.data()!;
@@ -26,10 +28,11 @@ class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
       expiryMonths: d['expiryMonths'] as int? ?? 12,
       minRedemption: d['minRedemption'] as int? ?? 100,
     );
-  }
+  });
 
   @override
   Future<void> updateRules(LoyaltyRules rules) async {
+    AdminCache.clear();
     await _db.collection('config').doc('loyaltyRules').set({
       'purchaseRuleEnabled': rules.purchaseRuleEnabled,
       'purchaseIsPercentage': rules.purchaseIsPercentage,
@@ -45,12 +48,35 @@ class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
   }
 
   @override
-  Future<List<LoyaltyTransaction>> getTransactions() async {
-    final snap = await _db
-        .collection('loyaltyTransactions')
-        .orderBy('createdAt', descending: true)
-        .limit(300)
-        .get();
+  Future<List<LoyaltyTransaction>> getTransactions({DateTime? before}) {
+    final q = _db.collection('loyaltyTransactions').orderBy('createdAt', descending: true).limit(pageSize);
+    if (before != null) return _loadTransactions(q.startAfter([Timestamp.fromDate(before)]));
+    return AdminCache.get('loyalty.first', () => _loadTransactions(q));
+  }
+
+  static const int pageSize = 100;
+
+  /// 50 reads at most — the real balances, not sums of a partial ledger.
+  @override
+  Future<List<LoyaltyLeader>> topBalances() => AdminCache.get('loyalty.top', () async {
+        final snap = await _db
+            .collection('users')
+            .where('loyaltyPoints', isGreaterThan: 0)
+            .orderBy('loyaltyPoints', descending: true)
+            .limit(50)
+            .get();
+        return [
+          for (final d in snap.docs)
+            LoyaltyLeader(
+              name: '${d.data()['fullName'] ?? ''} ${d.data()['familyName'] ?? ''}'.trim(),
+              phone: d.data()['phone'] as String? ?? '',
+              points: (d.data()['loyaltyPoints'] as num?)?.toInt() ?? 0,
+            ),
+        ];
+      });
+
+  Future<List<LoyaltyTransaction>> _loadTransactions(Query<Map<String, dynamic>> query) async {
+    final snap = await query.get();
     return snap.docs.map((doc) {
       final d = doc.data();
       return LoyaltyTransaction(
@@ -65,6 +91,7 @@ class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
     }).toList();
   }
 
+
   @override
   Future<void> addCorrection({
     required String userName,
@@ -72,6 +99,7 @@ class FirebaseAdminLoyaltyRepository implements LoyaltyRepository {
     required int points,
     required String reason,
   }) async {
+    AdminCache.clear();
     await _db.collection('loyaltyTransactions').add({
       'userName': userName,
       'userPhone': userPhone,

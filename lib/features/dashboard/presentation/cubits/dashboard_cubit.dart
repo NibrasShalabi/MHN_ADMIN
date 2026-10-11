@@ -12,6 +12,7 @@ import '../../../support/domain/entities/support_message.dart';
 import '../../domain/entities/dashboard_summary.dart';
 import 'dashboard_state.dart';
 import '../../../../core/error/admin_error.dart';
+import '../../../analytics/data/repository/firebase_analytics_repository.dart';
 
 class DashboardCubit extends SafeCubit<DashboardState> {
   final OrdersRepository _ordersRepository;
@@ -40,7 +41,9 @@ class DashboardCubit extends SafeCubit<DashboardState> {
     if (isClosed) return;
     emit(state.copyWith(status: DashboardStatus.loading));
     try {
-      final orders = await _ordersRepository.getOrders();
+      // Same window as analytics, so both share one cached read.
+      final orders = await _ordersRepository.getOrdersSince(DateTime.now().subtract(FirebaseAnalyticsRepository.window));
+      final pending = await _ordersRepository.countByStatus(OrderStatus.pending);
       final suggestions = await _suggestionsRepository.getSuggestions();
       final support = await _supportRepository.getMessages();
       final products = await _productsRepository.getProducts();
@@ -56,7 +59,7 @@ class DashboardCubit extends SafeCubit<DashboardState> {
         ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
 
       final summary = DashboardSummary(
-        pendingOrders: orders.where((o) => o.status == OrderStatus.pending).length,
+        pendingOrders: pending,
         unreviewedSuggestions: suggestions.where((s) => s.status == SuggestionStatus.underReview).length,
         openSupportMessages: support.where((m) => m.status == SupportStatus.open).length,
         outOfStockProducts: products.where((p) => p.stock == 0).length,

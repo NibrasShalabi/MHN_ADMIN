@@ -4,6 +4,7 @@ import '../../../messages/data/repository/customer_messages.dart';
 import '../../../messages/domain/entities/message_event.dart';
 import '../../domain/entities/support_message.dart';
 import 'support_repository.dart';
+import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminSupportRepository implements SupportRepository {
   static const int _pageSize = 50;
@@ -15,7 +16,7 @@ class FirebaseAdminSupportRepository implements SupportRepository {
   FirebaseAdminSupportRepository(this._db, this._messages);
 
   @override
-  Future<List<SupportMessage>> getMessages() async {
+  Future<List<SupportMessage>> getMessages() => AdminCache.get('FirebaseAdminSupportRepository.getMessages', () async {
     final snap = await _db
         .collection('support_messages')
         .orderBy('sentAt', descending: true)
@@ -28,10 +29,11 @@ class FirebaseAdminSupportRepository implements SupportRepository {
     return [
       for (final m in messages) m.sentBy.isEmpty ? m.copyWith(sentBy: names[m.userId] ?? m.userId) : m,
     ];
-  }
+  });
 
   @override
   Future<void> resolve(SupportMessage message, {String? reply}) async {
+    AdminCache.clear();
     final batch = _db.batch()
       ..update(_db.collection('support_messages').doc(message.id), {
         'isRead': true,
