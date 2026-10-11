@@ -46,9 +46,9 @@ class FieldBuilder extends StatelessWidget {
     ]);
   }
 
+  /// [newIndex] already accounts for the removed item.
   void _reorder(int oldIndex, int newIndex) {
     final next = [...fields];
-    if (newIndex > oldIndex) newIndex -= 1;
     final item = next.removeAt(oldIndex);
     next.insert(newIndex, item);
     onChanged(next);
@@ -77,7 +77,7 @@ class FieldBuilder extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
             itemCount: fields.length,
-            onReorder: _reorder,
+            onReorderItem: _reorder,
             itemBuilder: (context, index) => _FieldRow(
               key: ValueKey(fields[index].id),
               index: index,
@@ -198,7 +198,7 @@ class _FieldRowState extends State<_FieldRow> {
               Text(AdminStrings.fieldRequired, style: AdminTextStyles.caption),
               Switch(
                 value: field.isRequired,
-                activeColor: AdminColors.gold,
+                activeThumbColor: AdminColors.gold,
                 onChanged: (v) => widget.onChanged(field.copyWith(isRequired: v)),
               ),
             ],

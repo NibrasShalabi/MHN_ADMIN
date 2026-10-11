@@ -23,19 +23,13 @@ class DashboardCubit extends SafeCubit<DashboardState> {
   final AnalyticsRepository _analyticsRepository;
 
   DashboardCubit({
-    required OrdersRepository ordersRepository,
-    required SuggestionsRepository suggestionsRepository,
-    required SupportRepository supportRepository,
-    required ProductsRepository productsRepository,
-    required FitnessRepository fitnessRepository,
-    required AnalyticsRepository analyticsRepository,
-  })  : _ordersRepository = ordersRepository,
-        _suggestionsRepository = suggestionsRepository,
-        _supportRepository = supportRepository,
-        _productsRepository = productsRepository,
-        _fitnessRepository = fitnessRepository,
-        _analyticsRepository = analyticsRepository,
-        super(const DashboardState());
+    required this._ordersRepository,
+    required this._suggestionsRepository,
+    required this._supportRepository,
+    required this._productsRepository,
+    required this._fitnessRepository,
+    required this._analyticsRepository,
+  }) : super(const DashboardState());
 
   Future<void> load() async {
     if (isClosed) return;

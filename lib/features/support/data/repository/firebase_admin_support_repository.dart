@@ -38,7 +38,7 @@ class FirebaseAdminSupportRepository implements SupportRepository {
       ..update(_db.collection('support_messages').doc(message.id), {
         'isRead': true,
         'status': 'resolved',
-        if (reply != null) 'reply': reply,
+        'reply': ?reply,
       });
 
     if (reply != null) {

@@ -6,7 +6,6 @@ import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
-import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_chips.dart';
 import '../../../../core/widgets/admin_field.dart';
@@ -14,6 +13,7 @@ import '../../../../core/widgets/admin_text_input.dart';
 import '../../data/repository/loyalty_repository.dart';
 import '../cubits/loyalty_rules_cubit.dart';
 import '../cubits/loyalty_rules_state.dart';
+import '../../domain/entities/loyalty_rules.dart';
 
 class LoyaltyRulesPage extends StatelessWidget {
   const LoyaltyRulesPage({super.key});
@@ -42,7 +42,7 @@ class _LoyaltyRulesViewState extends State<_LoyaltyRulesView> {
   late final TextEditingController _minRedemptionController;
   bool _initialized = false;
 
-  void _initFrom(rules) {
+  void _initFrom(LoyaltyRules rules) {
     if (_initialized) return;
     _purchaseValueController = TextEditingController(text: rules.purchaseValue.toString());
     _appRatingController = TextEditingController(text: rules.appRatingPoints.toString());
@@ -100,7 +100,7 @@ class _LoyaltyRulesViewState extends State<_LoyaltyRulesView> {
               actions: [
                 Switch(
                   value: rules.purchaseRuleEnabled,
-                  activeColor: AdminColors.gold,
+                  activeThumbColor: AdminColors.gold,
                   onChanged: (v) => cubit.update(rules.copyWith(purchaseRuleEnabled: v)),
                 ),
               ],
@@ -140,7 +140,7 @@ class _LoyaltyRulesViewState extends State<_LoyaltyRulesView> {
               actions: [
                 Switch(
                   value: rules.appRatingRuleEnabled,
-                  activeColor: AdminColors.gold,
+                  activeThumbColor: AdminColors.gold,
                   onChanged: (v) => cubit.update(rules.copyWith(appRatingRuleEnabled: v)),
                 ),
               ],
@@ -162,7 +162,7 @@ class _LoyaltyRulesViewState extends State<_LoyaltyRulesView> {
               actions: [
                 Switch(
                   value: rules.suggestionRuleEnabled,
-                  activeColor: AdminColors.gold,
+                  activeThumbColor: AdminColors.gold,
                   onChanged: (v) => cubit.update(rules.copyWith(suggestionRuleEnabled: v)),
                 ),
               ],
@@ -184,7 +184,7 @@ class _LoyaltyRulesViewState extends State<_LoyaltyRulesView> {
               actions: [
                 Switch(
                   value: rules.expiryEnabled,
-                  activeColor: AdminColors.gold,
+                  activeThumbColor: AdminColors.gold,
                   onChanged: (v) => cubit.update(rules.copyWith(expiryEnabled: v)),
                 ),
               ],

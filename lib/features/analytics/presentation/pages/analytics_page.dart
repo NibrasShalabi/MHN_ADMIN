@@ -393,8 +393,9 @@ class _OrdersTrendChart extends StatelessWidget {
                 interval: labelStep.toDouble(),
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= daily.length)
+                  if (index < 0 || index >= daily.length) {
                     return const SizedBox.shrink();
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(
                       top: AdminConstants.spacingXs,

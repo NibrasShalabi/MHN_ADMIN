@@ -85,7 +85,7 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
     final daily = _buildDaily(orders);
 
     // ===== Financial =====
-    final totalRevenue = orders.fold<double>(0, (s, o) => s + (o as Order).totalPrice);
+    final totalRevenue = orders.fold<double>(0, (s, o) => s + o.totalPrice);
     final avgMargin = averageMargin(products.cast<Product>(), privateData);
     final averageOrderValue = orders.isEmpty ? 0.0 : totalRevenue / orders.length;
 
@@ -105,13 +105,13 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
 
     final complaintCounts = <String, num>{};
     final activity = <String, num>{};
-    for (final m in (support as List)) {
+    for (final m in support) {
       if (m.topic == SupportTopic.complaint) {
         complaintCounts.update(m.sentBy, (v) => v + 1, ifAbsent: () => 1);
       }
       activity.update(m.sentBy, (v) => v + 1, ifAbsent: () => 1);
     }
-    for (final s in (suggestions as List)) {
+    for (final s in suggestions) {
       activity.update(s.suggestedBy, (v) => v + 1, ifAbsent: () => 1);
     }
     for (final e in orderCounts.entries) {
@@ -119,9 +119,9 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
     }
 
     // ===== Suppliers =====
-    final supplierNameById = {for (final s in (suppliers as List)) s.id: s.name};
+    final supplierNameById = {for (final s in suppliers) s.id: s.name};
     final supplierIdByProductName = {
-      for (final p in (products as List))
+      for (final p in products)
         if (p.supplierId != null) p.name: p.supplierId!,
     };
     final supplierUnitsSold = <String, num>{};
@@ -136,14 +136,14 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
 
     // ===== Fitness =====
     final programCounts = <String, num>{};
-    for (final s in (submissions as List)) {
+    for (final s in submissions) {
       programCounts.update(s.programTitle, (v) => v + 1, ifAbsent: () => 1);
     }
 
     // ===== Loyalty =====
     final loyaltyTotals = <String, int>{};
     final loyaltyNames = <String, String>{};
-    for (final t in (loyaltyTxs as List)) {
+    for (final t in loyaltyTxs) {
       loyaltyTotals.update(t.userPhone, (v) => v + (t.points as int), ifAbsent: () => t.points as int);
       loyaltyNames[t.userPhone] = t.userName;
     }
@@ -152,7 +152,7 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
     );
 
     // ===== صور المنتجات =====
-    final totalProductImages = (products as List).fold<int>(0, (s, p) => s + (p.images as List).length);
+    final totalProductImages = products.fold<int>(0, (s, p) => s + (p.images as List).length);
 
     final mostOrderedProduct = productOrderCounts.isEmpty
         ? null

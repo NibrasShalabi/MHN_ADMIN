@@ -38,7 +38,7 @@ class CustomerMessages {
   }) {
     final template = (_cache ?? MessageTemplates.fromMap(null)).of(event);
     if (!template.enabled && !force) return null;
-    final text = template.render({if (orderId != null) MessageVar.orderId: orderId, ...values});
+    final text = template.render({MessageVar.orderId: ?orderId, ...values});
     return (
       ref: _messages.doc(),
       data: {

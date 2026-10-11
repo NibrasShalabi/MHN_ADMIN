@@ -65,7 +65,7 @@ class _PreviewField extends StatelessWidget {
   Widget _buildInput() {
     switch (field.type) {
       case FormFieldType.boolean:
-        return const Switch(value: false, onChanged: null, activeColor: AdminColors.gold);
+        return const Switch(value: false, onChanged: null, activeThumbColor: AdminColors.gold);
       case FormFieldType.dropdown:
         return _box(field.options.isEmpty ? AdminStrings.none : field.options.first);
       case FormFieldType.multiChoice:

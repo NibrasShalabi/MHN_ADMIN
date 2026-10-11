@@ -268,11 +268,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
     final sourceUrl = _sourceUrlController.text.trim();
     final private = ProductPrivate(costPrice: costPrice, sourceUrl: sourceUrl.isEmpty ? null : sourceUrl);
 
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
     final cubit = context.read<ProductsCubit>();
     final saving = _isEditing ? cubit.updateProduct(product, private) : cubit.addProduct(product, private);
-    if (!widget.dealOnly) return Navigator.of(context).pop();
+    if (!widget.dealOnly) return navigator.pop();
     // The deal is created right after — only hand the product back once it exists.
-    if (await saving && mounted) Navigator.of(context).pop(product);
+    if (await saving) navigator.pop(product);
   }
 
   void _delete() {
@@ -408,7 +410,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           Text(AdminStrings.productIsNew, style: AdminTextStyles.label),
                           Switch(
                             value: _isNew,
-                            activeColor: AdminColors.gold,
+                            activeThumbColor: AdminColors.gold,
                             onChanged: (v) => setState(() => _isNew = v),
                           ),
                         ],
@@ -427,7 +429,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           ),
                           Switch(
                             value: _isOrderable,
-                            activeColor: AdminColors.gold,
+                            activeThumbColor: AdminColors.gold,
                             onChanged: (v) => setState(() => _isOrderable = v),
                           ),
                         ],

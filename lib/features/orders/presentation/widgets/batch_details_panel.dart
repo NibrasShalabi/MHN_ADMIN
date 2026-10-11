@@ -171,7 +171,7 @@ class _BatchDetailsPanelState extends State<BatchDetailsPanel> {
               Text(AdminStrings.messageCustomer, style: AdminTextStyles.label),
               Switch(
                 value: _notifyCustomer,
-                activeColor: AdminColors.gold,
+                activeThumbColor: AdminColors.gold,
                 onChanged: (v) => setState(() => _notifyCustomer = v),
               ),
             ],

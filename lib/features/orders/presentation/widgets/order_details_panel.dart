@@ -301,7 +301,7 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
               Text(AdminStrings.messageCustomer, style: AdminTextStyles.label),
               Switch(
                 value: _notifyCustomer,
-                activeColor: AdminColors.gold,
+                activeThumbColor: AdminColors.gold,
                 onChanged: (v) => setState(() => _notifyCustomer = v),
               ),
             ],

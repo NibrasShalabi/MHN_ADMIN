@@ -55,7 +55,7 @@ class AdminDataTable extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: rowCount,
-            separatorBuilder: (_, __) =>
+            separatorBuilder: (_, _) =>
             const Divider(color: AdminColors.border, height: 1),
             itemBuilder: (context, index) => _Row(
               columns: columns,
