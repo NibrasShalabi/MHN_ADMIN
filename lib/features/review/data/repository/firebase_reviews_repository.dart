@@ -61,4 +61,26 @@ class FirebaseReviewsRepository implements ReviewsRepository {
     AdminCache.clear();
     await _db.collection('ratings').doc(uid).delete();
   }
+
+  @override
+  Future<List<AppReview>> getPublishedReviews() => AdminCache.get('reviews.published', () async {
+        final snap = await _db.collection('reviews').orderBy('createdAt', descending: true).limit(100).get();
+        return [
+          for (final doc in snap.docs)
+            AppReview(
+              uid: doc.id,
+              stars: doc.data()['stars'] as int? ?? 5,
+              comment: doc.data()['comment'] as String?,
+              createdAt: (doc.data()['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              isVisible: true,
+              authorName: doc.data()['authorName'] as String?,
+            ),
+        ];
+      });
+
+  @override
+  Future<void> deletePublished(String uid) async {
+    AdminCache.clear();
+    await _db.collection('reviews').doc(uid).delete();
+  }
 }
