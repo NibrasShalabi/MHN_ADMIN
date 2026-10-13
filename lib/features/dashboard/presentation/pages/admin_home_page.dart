@@ -19,6 +19,9 @@ import '../../../suggestions/presentation/pages/suggestions_page.dart';
 import '../../../support/presentation/pages/support_page.dart';
 import '../../domain/entities/admin_section.dart';
 import 'dashboard_page.dart';
+import '../../../../core/constants/admin_strings.dart';
+import '../../../../core/data/admin_cache.dart';
+import '../../../../core/theme/admin_colors.dart';
 
 /// Hosts the shell and swaps the body by section.
 ///
@@ -35,6 +38,15 @@ class AdminHomePage extends StatefulWidget {
 class _AdminHomePageState extends State<AdminHomePage> {
   AdminSection _section = AdminSection.dashboard;
 
+  /// Bumped by the refresh button: the section is rebuilt from scratch and
+  /// re-reads everything, bypassing the 2-minute cache.
+  int _refresh = 0;
+
+  void _reload() {
+    AdminCache.clear();
+    setState(() => _refresh++);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AdminShell(
@@ -46,7 +58,15 @@ class _AdminHomePageState extends State<AdminHomePage> {
             () => _section = AdminSection.values.firstWhere((s) => s.name == id),
       ),
       title: _section.label,
+      actions: [
+        IconButton(
+          tooltip: AdminStrings.refresh,
+          icon: const Icon(Icons.refresh_rounded, color: AdminColors.gold),
+          onPressed: _reload,
+        ),
+      ],
       child: _SectionBody(
+        key: ValueKey('${_section.name}-$_refresh'),
         section: _section,
         onNavigate: (s) => setState(() => _section = s),
       ),    );
@@ -57,7 +77,7 @@ class _SectionBody extends StatelessWidget {
   final AdminSection section;
   final ValueChanged<AdminSection> onNavigate;
 
-  const _SectionBody({required this.section, required this.onNavigate});
+  const _SectionBody({super.key, required this.section, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
