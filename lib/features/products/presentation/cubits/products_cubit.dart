@@ -5,28 +5,61 @@ import '../../domain/entities/product_private.dart';
 import 'products_state.dart';
 import '../../../../core/error/admin_error.dart';
 
-/// Writes patch the list locally instead of reloading the whole
-/// collection — a full reload after every save was N reads each time.
+/// One section's list, a page at a time — the whole collection was one
+/// read per product on every open. Writes patch the list locally instead
+/// of reloading it.
 class ProductsCubit extends SafeCubit<ProductsState> {
   final ProductsRepository _repository;
+  final String section;
+  final ProductPricing pricing;
 
-  ProductsCubit(this._repository) : super(const ProductsState());
+  String _query = '';
+  Object? _cursor;
 
-  Future<void> loadProducts() async {
+  ProductsCubit(this._repository, {this.section = ProductSection.store, this.pricing = ProductPricing.money})
+      : super(const ProductsState());
+
+  /// Starts the list over — on open and whenever the search changes.
+  Future<void> loadProducts([String query = '']) async {
+    _query = query;
     emit(state.copyWith(status: ProductsStatus.loading));
     try {
-      final products = await _repository.getProducts();
-      emit(state.copyWith(status: ProductsStatus.loaded, products: products));
+      final batch = await _fetch(null);
+      // A newer search started meanwhile — its result wins.
+      if (query != _query) return;
+      _cursor = batch.cursor;
+      emit(state.copyWith(status: ProductsStatus.loaded, products: batch.items, hasMore: batch.cursor != null));
     } catch (e) {
       emit(state.copyWith(status: ProductsStatus.error, errorMessage: AdminError.message(e)));
     }
   }
 
+  Future<void> loadMore() async {
+    if (_cursor == null || state.loadingMore) return;
+    final query = _query;
+    emit(state.copyWith(loadingMore: true));
+    try {
+      final batch = await _fetch(_cursor);
+      if (query != _query) return;
+      _cursor = batch.cursor;
+      emit(state.copyWith(
+        products: [...state.products, ...batch.items],
+        hasMore: batch.cursor != null,
+        loadingMore: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(loadingMore: false, errorMessage: AdminError.message(e)));
+    }
+  }
+
+  Future<ProductBatch> _fetch(Object? after) =>
+      _repository.getPage(section: section, pricing: pricing, query: _query, after: after);
+
   Future<ProductPrivate> loadPrivate(String productId) => _repository.getPrivate(productId);
 
   Future<bool> addProduct(Product product, ProductPrivate private) => _write(
         () => _repository.addProduct(product, private),
-        (list) => [...list, product],
+        (list) => [product, ...list],
       );
 
   Future<bool> updateProduct(Product product, ProductPrivate private) => _write(

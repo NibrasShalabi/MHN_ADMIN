@@ -6,6 +6,7 @@ import '../../domain/entities/product_private.dart';
 import '../../../presets/domain/entities/presets.dart';
 import 'products_repository.dart';
 import '../../../../core/data/admin_cache.dart';
+import '../../../../core/data/search_keys.dart';
 
 class FirebaseAdminProductsRepository implements ProductsRepository {
   final FirebaseFirestore _db;
@@ -13,12 +14,65 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   FirebaseAdminProductsRepository(this._db);
 
   static const String _private = 'productsPrivate';
+  static const int _pageSize = 50;
+  static const int _searchLimit = 20;
+
+  CollectionReference<Map<String, dynamic>> get _products => _db.collection('products');
+
+  /// What a list shows: one pricing, never deal-only products.
+  Query<Map<String, dynamic>> _listed({String? section, ProductPricing pricing = ProductPricing.money}) {
+    var q = _products.where('pricing', isEqualTo: pricing.name).where('dealOnly', isEqualTo: false);
+    if (section != null) q = q.where('section', isEqualTo: section);
+    return q;
+  }
+
+  /// Browsing is newest first (one composite index); a search skips the
+  /// ordering so it needs no index of its own.
+  @override
+  Future<ProductBatch> getPage({
+    required String section,
+    required ProductPricing pricing,
+    String query = '',
+    Object? after,
+  }) async {
+    final key = SearchKeys.keyOf(query);
+    var q = _listed(section: section, pricing: pricing);
+    q = key == null ? q.orderBy('createdAt', descending: true) : q.where('searchKeys', arrayContains: key);
+    if (after is DocumentSnapshot) q = q.startAfterDocument(after);
+    final snap = await q.limit(_pageSize).get();
+    return ProductBatch(
+      [for (final d in snap.docs) if (key == null || SearchKeys.matches('${d.data()['name']}', query)) _fromDoc(d)],
+      snap.docs.length == _pageSize ? snap.docs.last : null,
+    );
+  }
+
+  @override
+  Future<List<Product>> search(String query, {String? section}) async {
+    final key = SearchKeys.keyOf(query);
+    if (key == null) return const [];
+    final snap = await _listed(section: section).where('searchKeys', arrayContains: key).limit(_searchLimit).get();
+    return [for (final d in snap.docs) if (SearchKeys.matches('${d.data()['name']}', query)) _fromDoc(d)];
+  }
+
+  @override
+  Future<Product?> getProduct(String id) async {
+    final doc = await _products.doc(id).get();
+    return doc.exists ? _fromDoc(doc) : null;
+  }
+
+  @override
+  Future<int> countOutOfStock() =>
+      AdminCache.get('FirebaseAdminProductsRepository.countOutOfStock', () async {
+        final agg = await _products.where('stock', isEqualTo: 0).count().get();
+        return agg.count ?? 0;
+      });
 
   @override
   Future<List<Product>> getProducts() => AdminCache.get('FirebaseAdminProductsRepository.getProducts', () async {
     final snap = await _db.collection('products').get();
     await _migrateLegacyCostPrices(snap.docs);
     await _migrateLegacyColors(snap.docs);
+    await _backfillListFields(snap.docs);
     return snap.docs.map(_fromDoc).toList();
   });
 
@@ -206,6 +260,44 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     }
   }
 
+  /// Read from the category on every save, so a product follows it.
+  Future<String> _sectionOf(String? categoryId) async {
+    if (categoryId == null) return ProductSection.store;
+    final doc = await _db.collection('categories').doc(categoryId).get();
+    return _section(doc.data());
+  }
+
+  String _section(Map<String, dynamic>? category) => switch (category?['scope']) {
+        'fitness' => ProductSection.fitness,
+        'supplier' => ProductSection.supplier('${category!['supplierId']}'),
+        _ => ProductSection.store,
+      };
+
+  /// One-time, self-healing: products saved before paged lists lack the
+  /// fields those queries filter on. Written the first time the whole list
+  /// loads (opening Analytics or Presets once).
+  Future<void> _backfillListFields(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    const fields = ['section', 'searchKeys', 'pricing', 'dealOnly', 'createdAt'];
+    final legacy = docs.where((d) => fields.any((f) => d.data()[f] == null)).toList();
+    if (legacy.isEmpty) return;
+    AdminCache.clear();
+    final categories = {for (final c in (await _db.collection('categories').get()).docs) c.id: c.data()};
+    for (var i = 0; i < legacy.length; i += 400) {
+      final batch = _db.batch();
+      for (final doc in legacy.skip(i).take(400)) {
+        final d = doc.data();
+        batch.update(doc.reference, {
+          'section': _section(categories[d['categoryId']]),
+          'searchKeys': SearchKeys.of('${d['name'] ?? ''}'),
+          'pricing': d['pricing'] ?? ProductPricing.money.name,
+          'dealOnly': d['dealOnly'] ?? false,
+          if (d['createdAt'] == null) 'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+    }
+  }
+
   Future<Map<String, dynamic>> _toMap(Product product) async {
     final colors = await _colorsToMap(product.colorIds);
     // In the set's own order (S before M, 1-2 before 3-4), not tap order.
@@ -238,6 +330,8 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       }).toList() ?? [],
       'discountPercentage': product.discountPercentage,
       'pricing': product.pricing.name,
+      'section': await _sectionOf(product.category),
+      'searchKeys': SearchKeys.of(product.name),
     };
   }
 }

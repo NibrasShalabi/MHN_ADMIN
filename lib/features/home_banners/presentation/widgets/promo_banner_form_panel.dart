@@ -17,7 +17,7 @@ import '../../../../core/widgets/admin_text_input.dart';
 import '../../../categories/data/repository/categories_repository.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../products/data/repository/products_repository.dart';
-import '../../../products/domain/entities/product.dart';
+import '../../../products/presentation/widgets/product_picker.dart';
 import '../../domain/entities/promo_banner.dart';
 import '../cubits/promo_banners_cubit.dart';
 
@@ -43,10 +43,7 @@ class _PromoBannerFormPanelState extends State<PromoBannerFormPanel> {
   late DateTime? _startsAt = widget.banner?.startsAt;
   late DateTime? _endsAt = widget.banner?.endsAt;
 
-  // Store products and store categories — what a home banner promotes.
-  final Future<List<Product>> _products = GetIt.instance<ProductsRepository>()
-      .getProducts()
-      .then((all) => all.where((p) => p.pricing == ProductPricing.money && !p.dealOnly).toList());
+  // Store categories — what a home banner can promote.
   final Future<List<Category>> _categories = GetIt.instance<CategoriesRepository>()
       .getCategories()
       .then((all) => all.where((c) => c.scope == CategoryScope.store).toList());
@@ -133,8 +130,8 @@ class _PromoBannerFormPanelState extends State<PromoBannerFormPanel> {
           ),
         ),
         if (_link == BannerLink.product)
-          _Target<Product>(future: _products, selectedId: _linkId, idOf: (p) => p.id, labelOf: (p) => p.name,
-              onChanged: (id) => setState(() => _linkId = id)),
+          ProductPicker(
+              initialId: _linkId, section: ProductSection.store, onChanged: (p) => setState(() => _linkId = p?.id)),
         if (_link == BannerLink.category)
           _Target<Category>(future: _categories, selectedId: _linkId, idOf: (c) => c.id, labelOf: (c) => c.name,
               onChanged: (id) => setState(() => _linkId = id)),

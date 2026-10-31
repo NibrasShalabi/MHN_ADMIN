@@ -6,7 +6,6 @@ import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
-import '../../../../core/widgets/admin_dropdown.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_field.dart';
@@ -17,6 +16,7 @@ import '../../../products/data/repository/products_repository.dart';
 import '../../../products/domain/entities/product.dart' as admin_product;
 import '../../../products/presentation/cubits/products_cubit.dart';
 import '../../../products/presentation/pages/product_form_page.dart';
+import '../../../products/presentation/widgets/product_picker.dart';
 import '../../domain/entities/deal_promotion.dart';
 import '../cubits/deals_admin_cubit.dart';
 import '../cubits/deals_admin_state.dart';
@@ -83,10 +83,10 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
   late final TabController _tabs = TabController(length: 2, vsync: this)..addListener(() => setState(() {}));
 
   // Tab 1 — an existing store product.
-  List<admin_product.Product> _products = [];
-  bool _loadingProducts = true;
-  final _search = TextEditingController();
   admin_product.Product? _selected;
+
+  /// Bumped after a deal is saved, so the picker starts empty again.
+  int _pickerReset = 0;
 
   // Tab 2 — a product made for this deal only.
   admin_product.Product? _dealProduct;
@@ -98,23 +98,11 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _loadProducts();
-  }
-
-  Future<void> _loadProducts() async {
-    final products = await GetIt.instance<ProductsRepository>().getProducts();
-    if (!mounted) return;
-    setState(() {
-      // Deal-only products belong to their own deal; gifts are priced in points.
-      _products = products.where((p) => !p.dealOnly && p.pricing == admin_product.ProductPricing.money).toList();
-      _loadingProducts = false;
-    });
   }
 
   @override
   void dispose() {
     _tabs.dispose();
-    _search.dispose();
     _discount.dispose();
     _hours.dispose();
     super.dispose();
@@ -160,6 +148,7 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
     if (result != DealsAdminResult.success) return;
     setState(() {
       _selected = null;
+      _pickerReset++;
       _dealProduct = null;
       _discount.clear();
       _hours.text = '24';
@@ -170,8 +159,6 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
   Widget build(BuildContext context) {
     final product = _product;
     final discount = _discountValue;
-    final query = _search.text.trim();
-    final matches = _products.where((p) => query.isEmpty || p.name.contains(query)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -196,23 +183,11 @@ class _AddDealFormState extends State<_AddDealForm> with SingleTickerProviderSta
         if (_tabs.index == 0) ...[
           Text(AdminStrings.dealExistingHint, style: AdminTextStyles.caption),
           const SizedBox(height: AdminConstants.spacingMd),
-          if (_loadingProducts)
-            const Center(child: CircularProgressIndicator())
-          else ...[
-            AdminTextInput(controller: _search, hint: AdminStrings.searchProducts, onChanged: (_) => setState(() {})),
-            const SizedBox(height: AdminConstants.spacingSm),
-            AdminField(
-              label: AdminStrings.selectProduct,
-              isRequired: true,
-              child: AdminDropdown<admin_product.Product>(
-                value: matches.contains(_selected) ? _selected : null,
-                items: matches,
-                labelOf: (p) => '${p.name} — ${Money.format(p.price)}',
-                hint: AdminStrings.selectProduct,
-                onChanged: (p) => setState(() => _selected = p),
-              ),
-            ),
-          ],
+          AdminField(
+            label: AdminStrings.selectProduct,
+            isRequired: true,
+            child: ProductPicker(key: ValueKey(_pickerReset), onChanged: (p) => setState(() => _selected = p)),
+          ),
         ] else ...[
           Text(AdminStrings.dealNewHint, style: AdminTextStyles.caption),
           const SizedBox(height: AdminConstants.spacingMd),

@@ -55,6 +55,12 @@ class FirebaseAnalyticsRepository implements AnalyticsRepository {
   }
 
   @override
+  Future<int> totalUsers() async {
+    final doc = await _db.collection('config').doc('stats').get();
+    return doc.data()?['totalUsers'] as int? ?? 0;
+  }
+
+  @override
   Future<AnalyticsData> getAnalytics() async {
     // جلب كل البيانات parallel — تقليل الـ latency
     final results = await Future.wait([

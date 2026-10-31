@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -8,8 +10,8 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_data_table.dart';
+import '../../../../core/widgets/admin_load_more.dart';
 import '../../../../core/widgets/admin_text_input.dart';
-import '../../../categories/data/repository/categories_repository.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../data/repository/products_repository.dart';
 import '../../domain/entities/product.dart';
@@ -28,10 +30,19 @@ class ProductsPage extends StatelessWidget {
 
   const ProductsPage({super.key, this.pricingMode = ProductPricing.money, this.scope, this.supplierId});
 
+  /// Every section lists only its own products: a supplier its own, fitness
+  /// its fitness products, the store everything else.
+  String get _section => switch ((supplierId, scope)) {
+        (final String id, _) => ProductSection.supplier(id),
+        (_, CategoryScope.fitness) => ProductSection.fitness,
+        _ => ProductSection.store,
+      };
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProductsCubit(GetIt.instance<ProductsRepository>())..loadProducts(),
+      create: (_) => ProductsCubit(GetIt.instance<ProductsRepository>(), section: _section, pricing: pricingMode)
+        ..loadProducts(),
 
       child: _ProductsView(pricingMode: pricingMode, scope: scope, supplierId: supplierId),
     );
@@ -50,28 +61,20 @@ class _ProductsView extends StatefulWidget {
 }
 
 class _ProductsViewState extends State<_ProductsView> {
-  final _searchController = TextEditingController();
-  String _query = '';
+  static const Duration _debounce = Duration(milliseconds: 400);
 
-  /// Every section lists only its own products: a supplier its categories,
-  /// fitness its fitness categories, the store everything else, loyalty its
-  /// points gifts.
-  late final Future<bool Function(Product)> _belongs = GetIt.instance<CategoriesRepository>().getCategories().then((all) {
-    final elsewhere = {
-      for (final c in all)
-        if (c.scope == CategoryScope.fitness || c.scope == CategoryScope.supplier) c.id,
-    };
-    final scoped = {
-      for (final c in all)
-        if (widget.supplierId != null ? c.supplierId == widget.supplierId : c.scope == widget.scope) c.id,
-    };
-    return (Product p) => widget.supplierId == null && widget.scope == null
-        ? !elsewhere.contains(p.category)
-        : scoped.contains(p.category);
-  });
+  final _searchController = TextEditingController();
+  Timer? _searchTimer;
+
+  /// Searches on the server once typing pauses — one query per word, not per letter.
+  void _onSearch(String value) {
+    _searchTimer?.cancel();
+    _searchTimer = Timer(_debounce, () => context.read<ProductsCubit>().loadProducts(value.trim()));
+  }
 
   @override
   void dispose() {
+    _searchTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -104,7 +107,7 @@ class _ProductsViewState extends State<_ProductsView> {
               child: AdminTextInput(
                 controller: _searchController,
                 hint: AdminStrings.searchProducts,
-                onChanged: (v) => setState(() => _query = v.trim()),
+                onChanged: _onSearch,
               ),
             ),
             const SizedBox(width: AdminConstants.spacingMd),
@@ -118,14 +121,8 @@ class _ProductsViewState extends State<_ProductsView> {
           ],
         ),
         const SizedBox(height: AdminConstants.spacingLg),
-        FutureBuilder<bool Function(Product)>(
-          future: _belongs,
-          builder: (context, scopeSnap) => BlocBuilder<ProductsCubit, ProductsState>(
+        BlocBuilder<ProductsCubit, ProductsState>(
           builder: (context, state) {
-            if (scopeSnap.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final belongs = scopeSnap.data ?? ((Product _) => true);
             if (state.status == ProductsStatus.loading ||
                 state.status == ProductsStatus.initial) {
               return const Padding(
@@ -139,15 +136,13 @@ class _ProductsViewState extends State<_ProductsView> {
               );
             }
 
-            // The store tab and the loyalty gifts tab each list their own products.
-            final products = state.products
-                .where((p) => p.pricing == widget.pricingMode && !p.dealOnly)
-                .where(belongs)
-                .where((p) => _query.isEmpty || p.name.contains(_query))
-                .toList();
+            final products = state.products;
             final cubit = context.read<ProductsCubit>();
 
-            return AdminDataTable(
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AdminDataTable(
               emptyMessage: AdminStrings.noProducts,
               rowCount: products.length,
               columns: const [
@@ -209,10 +204,11 @@ class _ProductsViewState extends State<_ProductsView> {
                 ];
               },
               onRowTap: (index) => _openForm(context, cubit, product: products[index]),
-
+                ),
+                AdminLoadMore(hasMore: state.hasMore, loading: state.loadingMore, onPressed: cubit.loadMore),
+              ],
             );
           },
-        ),
         ),
       ],
     );

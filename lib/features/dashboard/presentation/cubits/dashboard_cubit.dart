@@ -40,9 +40,9 @@ class DashboardCubit extends SafeCubit<DashboardState> {
       final pending = await _ordersRepository.countByStatus(OrderStatus.pending);
       final suggestions = await _suggestionsRepository.getSuggestions();
       final support = await _supportRepository.getMessages();
-      final products = await _productsRepository.getProducts();
+      final outOfStock = await _productsRepository.countOutOfStock();
       final submissions = await _fitnessRepository.getSubmissions();
-      final analytics = await _analyticsRepository.getAnalytics();
+      final users = await _analyticsRepository.totalUsers();
 
       final now = DateTime.now();
       bool isToday(DateTime d) =>
@@ -56,12 +56,12 @@ class DashboardCubit extends SafeCubit<DashboardState> {
         pendingOrders: pending,
         unreviewedSuggestions: suggestions.where((s) => s.status == SuggestionStatus.underReview).length,
         openSupportMessages: support.where((m) => m.status == SupportStatus.open).length,
-        outOfStockProducts: products.where((p) => p.stock == 0).length,
+        outOfStockProducts: outOfStock,
         fitnessSubmissions: submissions.length,
         todayOrders: todayOrders.length,
         todayRevenue: todayOrders.fold(0, (sum, o) => sum + o.totalPrice),
         completedOrdersToday: todayOrders.where((o) => o.status == OrderStatus.delivered).length,
-        approxUsers: analytics.totalUsers,
+        approxUsers: users,
         recentOrders: sortedOrders.take(5).toList(),
       );
 
