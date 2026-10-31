@@ -1,3 +1,4 @@
+import '../../features/app_update/data/app_update_repository.dart';
 import '../../features/messages/data/repository/broadcasts_repository.dart';
 import '../../features/messages/data/repository/customer_messages.dart';
 import '../../features/payments/data/repository/payment_settings_repository.dart';
@@ -67,6 +68,7 @@ void setupInjector() {
 
   // ===== Shipping =====
   getIt.registerLazySingleton(() => ShippingRepository(db));
+  getIt.registerLazySingleton(() => AppUpdateRepository(db));
   getIt.registerLazySingleton(() => PaymentSettingsRepository(db));
 
   // ===== Orders =====

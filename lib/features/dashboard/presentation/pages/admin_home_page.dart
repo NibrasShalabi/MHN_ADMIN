@@ -2,6 +2,8 @@ import '../../../messages/presentation/pages/messages_page.dart';
 import '../../../payments/presentation/pages/payment_settings_page.dart';
 import '../../../shipping/presentation/pages/shipping_page.dart';
 import 'package:flutter/material.dart';
+
+import '../../../app_update/presentation/app_update_page.dart';
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/widgets/admin_shell.dart';
 import '../../../analytics/presentation/pages/analytics_page.dart';
@@ -101,6 +103,7 @@ class _SectionBody extends StatelessWidget {
         AdminSection.analytics => const AnalyticsPage(),
         AdminSection.deals => const DealsAdminPage(),
         AdminSection.reviews => const ReviewsPage(),
+        AdminSection.appUpdate => const AppUpdatePage(),
       },
     );
   }

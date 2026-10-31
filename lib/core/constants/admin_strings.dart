@@ -275,6 +275,17 @@ class AdminStrings {
 
   // ===== Shipping =====
   static const String navShipping = 'الشحن';
+  static const String navAppUpdate = 'تحديث التطبيق';
+  static const String updateHowItWorks =
+      'كل ما يفتح الزبون التطبيق بيقارن رقم نسخته (الرقم بعد + بـ pubspec) بهالأرقام. أقدم من آخر نسخة: بتطلعلو رسالة تحديث بيقدر يأجّلها. أقدم من أقل نسخة: ما بيقدر يستعمل التطبيق قبل ما يحدّث.';
+  static const String updateLatestBuild = 'رقم آخر نسخة (build)';
+  static const String updateLatestBuildHint = 'ارفعه بعد ما تنزل النسخة الجديدة عالمتجر';
+  static const String updateLatestName = 'اسم آخر نسخة';
+  static const String updateMinBuild = 'أقل نسخة مسموحة (تحديث إجباري)';
+  static const String updateMinBuildHint = 'خليه 0 إلا إذا في خطأ خطير أو تغيير بيكسر النسخ القديمة';
+  static const String updateNotes = 'شو الجديد';
+  static const String updateStoreUrl = 'رابط التحديث';
+  static const String updateMinAboveLatest = 'أقل نسخة لازم تكون أصغر أو مساوية لآخر نسخة';
 
   // ===== Payment addresses =====
   static const String navPayments = 'عناوين الدفع';
