@@ -1,0 +1,13 @@
+# Same settings the dashboard holds — kept here so the Worker can be rebuilt
+# from the repo (`wrangler deploy` from this folder, if wrangler is installed).
+name = "mhn-media"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+PROJECT_ID = "mhn-shopping"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "mhn-images"
+jurisdiction = "eu"
