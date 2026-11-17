@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
+import '../../../../core/media/media_thumb.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
@@ -130,26 +131,7 @@ class _SuppliersView extends StatelessWidget {
               cellsBuilder: (index) {
                 final supplier = suppliers[index];
                 return [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
-                    child: supplier.logoBytes != null
-                        ? Image.memory(
-                      supplier.logoBytes!,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
-                    )
-                        : Container(
-                      width: 36,
-                      height: 36,
-                      color: AdminColors.surfaceRaised,
-                      child: const Icon(
-                        Icons.storefront_outlined,
-                        size: 18,
-                        color: AdminColors.textDisabled,
-                      ),
-                    ),
-                  ),
+                  MediaThumb(image: supplier.logo, width: 36, height: 36, placeholder: Icons.storefront_outlined),
                   Text(supplier.name, style: AdminTextStyles.caption),
                   Text(supplier.phone.isEmpty ? '—' : supplier.phone, style: AdminTextStyles.caption),
                   AdminStatusChip(

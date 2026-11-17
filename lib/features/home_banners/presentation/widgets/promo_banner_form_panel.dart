@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +10,7 @@ import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_chips.dart';
 import '../../../../core/widgets/admin_dropdown.dart';
 import '../../../../core/widgets/admin_field.dart';
+import '../../../../core/media/media_image.dart';
 import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../../categories/data/repository/categories_repository.dart';
@@ -37,7 +36,7 @@ class _PromoBannerFormPanelState extends State<PromoBannerFormPanel> {
 
   late final _title = TextEditingController(text: widget.banner?.title ?? '');
   late final _order = TextEditingController(text: '${widget.banner?.order ?? 0}');
-  late List<Uint8List> _image = [?widget.banner?.imageBytes];
+  late List<MediaImage> _image = [?widget.banner?.image];
   late BannerLink _link = widget.banner?.link ?? BannerLink.none;
   late String? _linkId = widget.banner?.linkId;
   late DateTime? _startsAt = widget.banner?.startsAt;
@@ -81,7 +80,7 @@ class _PromoBannerFormPanelState extends State<PromoBannerFormPanel> {
   void _save() {
     final banner = PromoBanner(
       id: widget.banner?.id ?? 'B-${DateTime.now().millisecondsSinceEpoch}',
-      imageBytes: _image.firstOrNull,
+      image: _image.firstOrNull,
       title: _title.text.trim().isEmpty ? null : _title.text.trim(),
       order: int.tryParse(_order.text.trim()) ?? 0,
       link: _link,
@@ -104,7 +103,7 @@ class _PromoBannerFormPanelState extends State<PromoBannerFormPanel> {
       children: [
         AdminField(
           label: AdminStrings.bannerImage,
-          child: AdminImagePicker(images: _image, onChanged: (imgs) => setState(() => _image = [?imgs.lastOrNull])),
+          child: AdminImagePicker(images: _image, onChanged: (imgs) => setState(() => _image = [?imgs.whereType<PickedImage>().lastOrNull ?? imgs.lastOrNull])),
         ),
         AdminField(label: AdminStrings.bannerTitle, child: AdminTextInput(controller: _title)),
         AdminField(

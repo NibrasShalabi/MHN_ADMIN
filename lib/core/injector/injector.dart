@@ -8,6 +8,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get_it/get_it.dart';
 
+import '../media/media_service.dart';
+import '../media/media_uploader.dart';
+
 import '../../features/analytics/data/repository/analytics_repository.dart';
 import '../../features/analytics/data/repository/firebase_analytics_repository.dart';
 import '../../features/auth/data/repository/auth_repository.dart';
@@ -47,6 +50,10 @@ void setupInjector() {
   );
   final auth = FirebaseAuth.instance;
 
+  // ===== Images: R2 through the Worker. Swap the uploader to change provider (docs/media.md). =====
+  getIt.registerLazySingleton<MediaUploader>(() => WorkerMediaUploader(auth));
+  getIt.registerLazySingleton(() => MediaService(getIt<MediaUploader>()));
+
   // ===== Auth =====
   getIt.registerLazySingleton<AuthRepository>(
         () => FirebaseAdminAuthRepository(auth),
@@ -58,7 +65,7 @@ void setupInjector() {
 
   // ===== Products =====
   getIt.registerLazySingleton<ProductsRepository>(
-        () => FirebaseAdminProductsRepository(db),
+        () => FirebaseAdminProductsRepository(db, getIt<MediaService>()),
   );
 
   // ===== Categories =====
@@ -83,7 +90,7 @@ void setupInjector() {
 
   // ===== Suppliers =====
   getIt.registerLazySingleton<SuppliersRepository>(
-        () => FirebaseAdminSuppliersRepository(db),
+        () => FirebaseAdminSuppliersRepository(db, getIt<MediaService>()),
   );
 
   // ===== Suggestions =====
@@ -98,7 +105,7 @@ void setupInjector() {
 
   // ===== Promo Banners =====
   getIt.registerLazySingleton<PromoBannersRepository>(
-        () => FirebaseAdminPromoBannersRepository(db),
+        () => FirebaseAdminPromoBannersRepository(db, getIt<MediaService>()),
   );
 
   // ===== Fake (لسا ما فيهم Firestore collections) =====

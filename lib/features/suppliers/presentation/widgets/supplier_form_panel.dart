@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/admin_constants.dart';
@@ -8,6 +6,7 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_field.dart';
+import '../../../../core/media/media_image.dart';
 import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../domain/entities/supplier.dart';
@@ -37,7 +36,7 @@ class _SupplierFormPanelState extends State<SupplierFormPanel> {
   late final _address = TextEditingController(text: widget.supplier?.address ?? '');
   late final _maps = TextEditingController(text: widget.supplier?.mapsUrl ?? '');
   late bool _active = widget.supplier?.isActive ?? true;
-  late List<Uint8List> _logo = [?widget.supplier?.logoBytes];
+  late List<MediaImage> _logo = [?widget.supplier?.logo];
   bool _saving = false;
 
   @override
@@ -58,7 +57,7 @@ class _SupplierFormPanelState extends State<SupplierFormPanel> {
     final supplier = Supplier(
       id: widget.supplier?.id ?? 'SUP-${DateTime.now().millisecondsSinceEpoch}',
       name: _name.text.trim(),
-      logoBytes: _logo.firstOrNull,
+      logo: _logo.firstOrNull,
       description: _description.text.trim(),
       phone: _phoneDigits,
       address: _address.text.trim(),
@@ -121,7 +120,7 @@ class _SupplierFormPanelState extends State<SupplierFormPanel> {
         AdminField(
           label: AdminStrings.supplierLogo,
           // One logo — picking a new one replaces the old.
-          child: AdminImagePicker(images: _logo, onChanged: (imgs) => setState(() => _logo = [?imgs.lastOrNull])),
+          child: AdminImagePicker(images: _logo, onChanged: (imgs) => setState(() => _logo = [?imgs.whereType<PickedImage>().lastOrNull ?? imgs.lastOrNull])),
         ),
         Row(
           children: [

@@ -1,6 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/media/media_image.dart';
 
 /// Where a tap on the banner takes the customer.
 enum BannerLink {
@@ -21,7 +21,7 @@ enum BannerLink {
 /// between [startsAt] and [endsAt] when set.
 class PromoBanner extends Equatable {
   final String id;
-  final Uint8List? imageBytes;
+  final MediaImage? image;
   final String? title;
   final int order;
   final BannerLink link;
@@ -33,7 +33,7 @@ class PromoBanner extends Equatable {
 
   const PromoBanner({
     required this.id,
-    this.imageBytes,
+    this.image,
     this.title,
     this.order = 0,
     this.link = BannerLink.none,
@@ -43,5 +43,5 @@ class PromoBanner extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, imageBytes, title, order, link, linkId, startsAt, endsAt];
+  List<Object?> get props => [id, image, title, order, link, linkId, startsAt, endsAt];
 }

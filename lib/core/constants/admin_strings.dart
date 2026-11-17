@@ -341,6 +341,9 @@ class AdminStrings {
   static const String deliveryFee = 'التوصيل';
 
   static const String addImages = 'إضافة صور';
+  static const String mediaBrowserUnsupported = 'هالمتصفح ما بيدعم ضغط الصور — افتح لوحة التحكم من Chrome أو Edge';
+  static const String mediaTooLarge = 'الصورة كبيرة كتير';
+  static const String mediaUploadFailed = 'ما زبط رفع الصورة، جرّب مرة تانية';
   static const String noImages = 'لا توجد صور';
 
   static const String copyLink = 'نسخ الرابط';

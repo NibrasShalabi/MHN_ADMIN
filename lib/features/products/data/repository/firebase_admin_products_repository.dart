@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/data/catalog_version.dart';
+import '../../../../core/media/image_encoder.dart';
+import '../../../../core/media/media_image.dart';
+import '../../../../core/media/media_service.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/product_private.dart';
 import '../../../presets/domain/entities/presets.dart';
@@ -10,8 +13,14 @@ import '../../../../core/data/search_keys.dart';
 
 class FirebaseAdminProductsRepository implements ProductsRepository {
   final FirebaseFirestore _db;
+  final MediaService _media;
 
-  FirebaseAdminProductsRepository(this._db);
+  FirebaseAdminProductsRepository(this._db, this._media);
+
+  /// The image paths a product holds now — read before a change so the
+  /// files it drops can be deleted after.
+  Future<List<String>> _imagePaths(String id) async =>
+      [...?((await _products.doc(id).get()).data()?['imageUrls'] as List?)?.cast<String>()];
 
   static const String _private = 'productsPrivate';
   static const int _pageSize = 50;
@@ -91,10 +100,12 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   @override
   Future<void> addProduct(Product product, ProductPrivate private) async {
     AdminCache.clear();
+    final images = await _media.save('products/${product.id}', product.images, ImageSpec.product);
     final batch = _db.batch()
       ..set(_db.collection('products').doc(product.id), {
         ...await _toMap(product),
-        'imageUrls': <String>[],
+        // Bucket paths, not URLs — see MediaConfig.
+        'imageUrls': images,
         'createdAt': FieldValue.serverTimestamp(),
       })
       ..set(_db.collection(_private).doc(product.id), _privateToMap(private));
@@ -102,14 +113,18 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     await batch.commit();
   }
 
-  /// Leaves imageUrls / createdAt untouched — editing must never wipe
-  /// images or make an old product look new.
+  /// Leaves createdAt untouched, so an edited product doesn't look new.
+  /// Images are uploaded first and the dropped ones deleted only after the
+  /// document is saved — a failed save never loses a picture.
   @override
   Future<void> updateProduct(Product product, ProductPrivate private) async {
     AdminCache.clear();
+    final before = await _imagePaths(product.id);
+    final images = await _media.save('products/${product.id}', product.images, ImageSpec.product);
     final batch = _db.batch()
       ..update(_db.collection('products').doc(product.id), {
         ...await _toMap(product),
+        'imageUrls': images,
         'costPrice': FieldValue.delete(),
         // Replaced by 'sizes'.
         'clothingSizes': FieldValue.delete(),
@@ -118,16 +133,19 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       ..set(_db.collection(_private).doc(product.id), _privateToMap(private), SetOptions(merge: true));
     CatalogVersion.bump(_db, batch);
     await batch.commit();
+    await _media.removeUnused(before, images);
   }
 
   @override
   Future<void> deleteProduct(String id) async {
     AdminCache.clear();
+    final before = await _imagePaths(id);
     final batch = _db.batch()
       ..delete(_db.collection('products').doc(id))
       ..delete(_db.collection(_private).doc(id));
     CatalogVersion.bump(_db, batch);
     await batch.commit();
+    await _media.removeUnused(before);
   }
 
   /// One-time, self-healing: older products kept costPrice in the public
@@ -208,7 +226,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       ingredients: d['ingredients'] as String?,
       benefits: d['benefits'] as String?,
       usage: d['usage'] as String?,
-      images: const [],
+      images: [for (final p in (d['imageUrls'] as List?) ?? const []) StoredImage(p as String)],
       isNew: d['isNew'] as bool? ?? false,
       isOrderable: d['isOrderable'] as bool? ?? true,
       sizes: sizes,

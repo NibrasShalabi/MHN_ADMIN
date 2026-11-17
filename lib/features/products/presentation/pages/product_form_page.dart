@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -13,6 +11,7 @@ import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_card.dart';
 import '../../../../core/widgets/admin_dropdown.dart';
 import '../../../../core/widgets/admin_field.dart';
+import '../../../../core/media/media_image.dart';
 import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../../categories/data/repository/categories_repository.dart';
@@ -70,7 +69,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _discountController;
   late final TextEditingController _sourceUrlController;
 
-  late List<Uint8List> _images;
+  late List<MediaImage> _images;
   late bool _isNew;
   late bool _isOrderable;
   SizeSet? _sizeSet;

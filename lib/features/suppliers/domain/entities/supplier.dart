@@ -1,6 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/media/media_image.dart';
 
 /// A third-party shop with its own storefront in the app. Customers order
 /// from it directly over WhatsApp; [ownerUid] is kept for the supplier
@@ -8,7 +8,7 @@ import 'package:equatable/equatable.dart';
 class Supplier extends Equatable {
   final String id;
   final String name;
-  final Uint8List? logoBytes;
+  final MediaImage? logo;
   final String description;
 
   /// Digits with the country code, e.g. 963912345678.
@@ -21,7 +21,7 @@ class Supplier extends Equatable {
   const Supplier({
     required this.id,
     required this.name,
-    this.logoBytes,
+    this.logo,
     this.description = '',
     this.phone = '',
     this.address = '',
@@ -31,5 +31,5 @@ class Supplier extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, name, logoBytes, description, phone, address, mapsUrl, isActive, ownerUid];
+  List<Object?> get props => [id, name, logo, description, phone, address, mapsUrl, isActive, ownerUid];
 }

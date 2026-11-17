@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
+import '../../../../core/media/media_thumb.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
@@ -128,26 +129,7 @@ class _PromoBannersView extends StatelessWidget {
               cellsBuilder: (index) {
                 final banner = banners[index];
                 return [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
-                    child: banner.imageBytes != null
-                        ? Image.memory(
-                      banner.imageBytes!,
-                      width: 48,
-                      height: 32,
-                      fit: BoxFit.cover,
-                    )
-                        : Container(
-                      width: 48,
-                      height: 32,
-                      color: AdminColors.surfaceRaised,
-                      child: const Icon(
-                        Icons.image_outlined,
-                        size: 16,
-                        color: AdminColors.textDisabled,
-                      ),
-                    ),
-                  ),
+                  MediaThumb(image: banner.image, width: 48, height: 32, placeholder: Icons.image_outlined),
                   Text(banner.title ?? '—', style: AdminTextStyles.caption),
                   Text('${banner.order}', style: AdminTextStyles.caption),
                   IconButton(

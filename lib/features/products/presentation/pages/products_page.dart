@@ -9,6 +9,7 @@ import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
+import '../../../../core/media/media_thumb.dart';
 import '../../../../core/widgets/admin_data_table.dart';
 import '../../../../core/widgets/admin_load_more.dart';
 import '../../../../core/widgets/admin_text_input.dart';
@@ -155,13 +156,7 @@ class _ProductsViewState extends State<_ProductsView> {
               cellsBuilder: (index) {
                 final product = products[index];
                 return [
-                  product.images.isEmpty
-                      ? const Icon(Icons.image_outlined, color: AdminColors.textDisabled)
-                      : ClipRRect(
-                    borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
-                    child: Image.memory(product.images.first,
-                        width: 32, height: 32, fit: BoxFit.cover),
-                  ),
+                  MediaThumb(image: product.images.firstOrNull, width: 32),
                   Text(product.name, style: AdminTextStyles.caption),
                   widget.pricingMode == ProductPricing.points
                       ? Text('${product.price.toStringAsFixed(0)} ${AdminStrings.pointsWord}', style: AdminTextStyles.caption)

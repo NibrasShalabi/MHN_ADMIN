@@ -1,7 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/media/media_image.dart';
 import '../../../presets/domain/entities/presets.dart';
 
 /// Points-priced products are what the client's loyalty store lists.
@@ -34,7 +33,8 @@ class Product extends Equatable {
   final String? ingredients;
   final String? benefits;
   final String? usage;
-  final List<Uint8List> images;
+  /// The first is the main image.
+  final List<MediaImage> images;
   final bool isNew;
   final bool isOrderable;
   final SizeSet? sizeSet;
@@ -85,7 +85,7 @@ class Product extends Equatable {
     String? ingredients,
     String? benefits,
     String? usage,
-    List<Uint8List>? images,
+    List<MediaImage>? images,
     bool? isNew,
     bool? isOrderable,
     SizeSet? sizeSet,

@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:collection/collection.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
@@ -7,10 +6,14 @@ import '../constants/admin_constants.dart';
 import '../constants/admin_strings.dart';
 import '../theme/admin_colors.dart';
 import '../theme/admin_text_styles.dart';
+import '../media/media_image.dart';
+import '../media/media_thumb.dart';
 
+/// Stored and newly picked images together. The first is the main one;
+/// tapping another makes it first. Uploading happens on save.
 class AdminImagePicker extends StatelessWidget {
-  final List<Uint8List> images;
-  final ValueChanged<List<Uint8List>> onChanged;
+  final List<MediaImage> images;
+  final ValueChanged<List<MediaImage>> onChanged;
 
   const AdminImagePicker({super.key, required this.images, required this.onChanged});
 
@@ -22,8 +25,10 @@ class AdminImagePicker extends StatelessWidget {
     final files = await openFiles(acceptedTypeGroups: [typeGroup]);
     if (files.isEmpty) return;
     final bytesList = await Future.wait(files.map((f) => f.readAsBytes()));
-    onChanged([...images, ...bytesList]);
+    onChanged([...images, for (final b in bytesList) PickedImage(b)]);
   }
+
+  void _makeMain(int index) => onChanged([images[index], ...images.whereIndexed((i, _) => i != index)]);
 
   void _remove(int index) {
     final next = [...images]..removeAt(index);
@@ -37,7 +42,7 @@ class AdminImagePicker extends StatelessWidget {
       runSpacing: AdminConstants.spacingSm,
       children: [
         for (var i = 0; i < images.length; i++)
-          _Thumb(bytes: images[i], onRemove: () => _remove(i)),
+          _Thumb(image: images[i], isMain: i == 0, onTap: () => _makeMain(i), onRemove: () => _remove(i)),
         _AddTile(onTap: _pickImages),
       ],
     );
@@ -45,19 +50,20 @@ class AdminImagePicker extends StatelessWidget {
 }
 
 class _Thumb extends StatelessWidget {
-  final Uint8List bytes;
+  final MediaImage image;
+  final bool isMain;
+  final VoidCallback onTap;
   final VoidCallback onRemove;
 
-  const _Thumb({required this.bytes, required this.onRemove});
+  const _Thumb({required this.image, required this.isMain, required this.onTap, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AdminConstants.radiusSm),
-          child: Image.memory(bytes, width: 84, height: 84, fit: BoxFit.cover),
-        ),
+        InkWell(onTap: onTap, child: MediaThumb(image: image, width: 84)),
+        if (isMain)
+          const Positioned(bottom: 2, left: 2, child: Icon(Icons.star_rounded, size: 18, color: AdminColors.gold)),
         Positioned(
           top: 2,
           right: 2,
@@ -65,10 +71,7 @@ class _Thumb extends StatelessWidget {
             onTap: onRemove,
             child: Container(
               padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: AdminColors.danger,
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: AdminColors.danger, shape: BoxShape.circle),
               child: const Icon(Icons.close, size: 14, color: Colors.white),
             ),
           ),

@@ -1,14 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/data/catalog_version.dart';
+import '../../../../core/media/image_encoder.dart';
+import '../../../../core/media/media_image.dart';
+import '../../../../core/media/media_service.dart';
 import '../../domain/entities/promo_banner.dart';
 import 'promo_banners_repository.dart';
 import '../../../../core/data/admin_cache.dart';
 
 class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
   final FirebaseFirestore _db;
+  final MediaService _media;
 
-  FirebaseAdminPromoBannersRepository(this._db);
+  FirebaseAdminPromoBannersRepository(this._db, this._media);
+
+  DocumentReference<Map<String, dynamic>> _doc(String id) => _db.collection('banners').doc(id);
+
+  Future<String?> _saveImage(PromoBanner b) async =>
+      (await _media.save('banners/${b.id}', [?b.image], ImageSpec.banner)).firstOrNull;
 
   @override
   Future<List<PromoBanner>> getBanners() => AdminCache.get('FirebaseAdminPromoBannersRepository.getBanners', () async {
@@ -24,9 +33,10 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
   @override
   Future<void> addBanner(PromoBanner banner) async {
     AdminCache.clear();
-    await CatalogVersion.commit(_db, (b) => b.set(_db.collection('banners').doc(banner.id), {
+    final image = await _saveImage(banner);
+    await CatalogVersion.commit(_db, (b) => b.set(_doc(banner.id), {
           ..._toMap(banner),
-          'imageUrl': null, // لاحقاً بعد Storage
+          'imageUrl': image, // bucket path — see MediaConfig
           'isActive': true,
         }));
   }
@@ -34,7 +44,10 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
   @override
   Future<void> updateBanner(PromoBanner banner) async {
     AdminCache.clear();
-    await CatalogVersion.commit(_db, (b) => b.update(_db.collection('banners').doc(banner.id), _toMap(banner)));
+    final before = (await _doc(banner.id).get()).data()?['imageUrl'] as String?;
+    final image = await _saveImage(banner);
+    await CatalogVersion.commit(_db, (b) => b.update(_doc(banner.id), {..._toMap(banner), 'imageUrl': image}));
+    await _media.removeUnused([before], [image]);
   }
 
   @override
@@ -62,7 +75,7 @@ class FirebaseAdminPromoBannersRepository implements PromoBannersRepository {
       linkId: d['linkId'] as String?,
       startsAt: (d['startsAt'] as Timestamp?)?.toDate(),
       endsAt: (d['endsAt'] as Timestamp?)?.toDate(),
-      // imageBytes: null — الصور من Storage لاحقاً
+      image: switch (d['imageUrl']) { final String p => StoredImage(p), _ => null },
     );
   }
 }
