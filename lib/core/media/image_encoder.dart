@@ -37,7 +37,7 @@ abstract final class ImageEncoder {
       ..height = h;
     canvas.context2D
       ..imageSmoothingQuality = 'high'
-      ..drawImageScaled(bitmap, 0, 0, w, h);
+      ..drawImage(bitmap, 0, 0, w.toDouble(), h.toDouble());
     bitmap.close();
 
     final done = Completer<web.Blob?>();

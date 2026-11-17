@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// so moving to a custom domain or another provider is one edit of
 /// config/media — no document changes, no app release. See docs/media.md.
 abstract final class MediaConfig {
-  /// Public reads. Today the bucket's r2.dev URL; later e.g. https://img.<domain>.
+  /// Public reads. Today the bucket's r2.dev URL; later e.g. `https://img.example.com`.
   static String baseUrl = 'https://pub-2d134d4fdf6440c1b779696af1a07dfd.r2.dev';
 
   /// Writes: the Worker in media_worker/.
