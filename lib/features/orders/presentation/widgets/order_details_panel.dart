@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/media/media_config.dart';
 import '../../../../core/utils/money.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -122,8 +123,9 @@ class _OrderDetailsPanelState extends State<OrderDetailsPanel> {
           if (_explorerUrl(order.paymentMethod, txid) case final url?)
             _LinkRow(label: '', url: url, text: AdminStrings.openInExplorer),
         ],
-        if (order.receiptUrl case final url?)
-          _LinkRow(label: AdminStrings.paymentReceipt, url: url),
+        // A bucket path since R2; MediaConfig.url leaves older full URLs as they are.
+        if (order.receiptUrl case final path?)
+          _LinkRow(label: AdminStrings.paymentReceipt, url: MediaConfig.url(path)),
         if (order.governorate case final g?) _InfoRow(label: AdminStrings.governorate, value: g),
         if (order.area case final a?) _InfoRow(label: AdminStrings.area, value: a),
         if (order.address.isNotEmpty) _InfoRow(label: AdminStrings.address, value: order.address),
