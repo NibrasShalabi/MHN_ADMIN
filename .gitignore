@@ -8,3 +8,6 @@ lib/firebase_options.dart
 build/
 .idea/
 .vscode/
+
+# Patch files received for review (git am)
+*.patch
