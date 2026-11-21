@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/media/media_image.dart';
+
 /// Where customers send money — `config/payment_addresses`, shown at checkout.
 enum PaymentChannel {
   trc20('USDT — TRC20 (Tron)'),
@@ -25,7 +27,10 @@ class PaymentSettings extends Equatable {
   final Map<PaymentChannel, String> addresses;
   final Set<PaymentChannel> disabled;
 
-  const PaymentSettings({this.addresses = const {}, this.disabled = const {}});
+  /// The receive QR from the Sham Cash app, shown at checkout.
+  final MediaImage? shamCashQr;
+
+  const PaymentSettings({this.addresses = const {}, this.disabled = const {}, this.shamCashQr});
 
   factory PaymentSettings.fromMap(Map<String, dynamic> d) => PaymentSettings(
         addresses: {
@@ -36,13 +41,15 @@ class PaymentSettings extends Equatable {
           for (final c in PaymentChannel.values)
             if ((d['disabled'] as List? ?? const []).contains(c.key)) c,
         },
+        shamCashQr: switch (d['sham_cash_qr']) { final String p => StoredImage(p), _ => null },
       );
 
+  /// sham_cash_qr is written by the repository (a bucket path, after upload).
   Map<String, dynamic> toMap() => {
         for (final c in PaymentChannel.values) c.key: addresses[c] ?? '',
         'disabled': [for (final c in disabled) c.key],
       };
 
   @override
-  List<Object?> get props => [addresses, disabled];
+  List<Object?> get props => [addresses, disabled, shamCashQr];
 }

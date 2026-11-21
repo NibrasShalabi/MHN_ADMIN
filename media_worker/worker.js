@@ -10,14 +10,14 @@
  *   Authorization: Bearer <Firebase ID token>
  *
  * Who may write what (mirrors firestore.rules: admin = custom claim admin):
- *   admin    → products/, banners/, categories/, suppliers/   (put + delete)
+ *   admin    → products/, banners/, categories/, suppliers/, payments/ (put + delete)
  *   customer → receipts/<own uid>/...                         (put once, ≤ 3 MB)
  *
  * Settings → Variables: PROJECT_ID = the Firebase project id.
  * Deploy: paste this file in the dashboard editor (Edit code) → Deploy.
  */
 
-const ADMIN_PREFIXES = ['products/', 'banners/', 'categories/', 'suppliers/'];
+const ADMIN_PREFIXES = ['products/', 'banners/', 'categories/', 'suppliers/', 'payments/'];
 const RECEIPTS = 'receipts/';
 const MAX_ADMIN_BYTES = 10 * 1024 * 1024;
 const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;

@@ -285,6 +285,8 @@ class AdminStrings {
 
   // ===== Shipping =====
   static const String navShipping = 'الشحن';
+  static const String shamCashQr = 'باركود الاستلام';
+  static const String shamCashQrHint = 'لقطة باركود الاستلام من تطبيق شام كاش — بيطلع للزبون فوق الرقم';
   static const String navAppUpdate = 'تحديث التطبيق';
   static const String updateHistory = 'سجل التحديثات';
   static String updateBuilds(int latest, int min) => 'آخر نسخة $latest · أقل نسخة $min';

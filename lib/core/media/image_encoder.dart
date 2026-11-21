@@ -23,6 +23,9 @@ class ImageSpec {
   static const logo = ImageSpec(512, 0.85);
   static const category = ImageSpec(512, 0.85);
   static const cover = ImageSpec(1200, 0.80);
+
+  /// Near-lossless: a QR has to scan.
+  static const qr = ImageSpec(1024, 0.95);
 }
 
 /// Resizes and re-encodes in the browser (canvas → WebP): fast, no package.

@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../../core/constants/admin_constants.dart';
+import '../../../../core/media/media_image.dart';
+import '../../../../core/media/media_thumb.dart';
+import '../../../../core/widgets/admin_field.dart';
+import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
@@ -27,6 +31,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   final _repo = GetIt.instance<PaymentSettingsRepository>();
   final _fields = {for (final c in PaymentChannel.values) c: TextEditingController()};
   final _disabled = <PaymentChannel>{};
+  List<MediaImage> _qr = const [];
   PaymentSettings _saved = const PaymentSettings();
   bool _loading = true;
   bool _saving = false;
@@ -58,6 +63,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         _disabled
           ..clear()
           ..addAll(s.disabled);
+        _qr = [?s.shamCashQr];
         _loading = false;
       });
     } catch (e) {
@@ -79,6 +85,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   PaymentSettings get _current => PaymentSettings(
         addresses: {for (final c in PaymentChannel.values) if (_value(c).isNotEmpty) c: _value(c)},
         disabled: {..._disabled},
+        shamCashQr: _qr.firstOrNull,
       );
 
   Future<void> _save() async {
@@ -88,12 +95,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       for (final c in PaymentChannel.values)
         if (next.addresses[c] != _saved.addresses[c]) c,
     ];
-    if (changed.isNotEmpty && !await _confirm(changed, next)) return;
+    final qrChanged = next.shamCashQr != _saved.shamCashQr;
+    if ((changed.isNotEmpty || qrChanged) && !await _confirm(changed, next, qrChanged: qrChanged)) return;
 
     setState(() => _saving = true);
     try {
       await _repo.save(next);
-      _saved = next;
+      // Re-read so the QR is the saved path, not the picked bytes.
+      _saved = await _repo.get();
+      if (mounted) setState(() => _qr = [?_saved.shamCashQr]);
       _toast(AdminStrings.saved);
     } catch (e) {
       _toast(AdminError.message(e));
@@ -102,7 +112,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     }
   }
 
-  Future<bool> _confirm(List<PaymentChannel> changed, PaymentSettings next) async =>
+  Future<bool> _confirm(List<PaymentChannel> changed, PaymentSettings next, {bool qrChanged = false}) async =>
       await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -121,6 +131,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                   style: AdminTextStyles.body.copyWith(color: AdminColors.gold, fontFamily: 'monospace'),
                 ),
                 const SizedBox(height: AdminConstants.spacingSm),
+              ],
+              if (qrChanged) ...[
+                Text(AdminStrings.shamCashQr, style: AdminTextStyles.label),
+                if (next.shamCashQr case final qr?) MediaThumb(image: qr, width: 140) else Text(AdminStrings.addressRemoved, style: AdminTextStyles.caption),
               ],
             ],
           ),
@@ -160,7 +174,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                 onChanged: (on) => setState(() => on ? _disabled.remove(c) : _disabled.add(c)),
               ),
             ],
-            child: AdminTextInput(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+            AdminTextInput(
               controller: _fields[c]!,
               hint: c == PaymentChannel.shamCash ? AdminStrings.shamCashHint : AdminStrings.walletHint,
               errorText: _errorFor(c),
@@ -173,6 +190,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                   _toast(AdminStrings.copied);
                 },
               ),
+            ),
+            if (c == PaymentChannel.shamCash)
+              AdminField(
+                label: AdminStrings.shamCashQr,
+                hint: AdminStrings.shamCashQrHint,
+                child: AdminImagePicker(images: _qr, single: true, onChanged: (imgs) => setState(() => _qr = imgs)),
+              ),
+              ],
             ),
           ),
           const SizedBox(height: AdminConstants.spacingMd),

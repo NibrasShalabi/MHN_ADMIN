@@ -27,6 +27,7 @@
 | بانر | `banners/<id>/<stamp>_0.webp` | `banners.imageUrl` |
 | لوغو مورد وغلافو | `suppliers/<id>/<stamp>_0.webp` | `suppliers.logoUrl`، `suppliers.coverUrl` |
 | صورة قسم | `categories/<id>/<stamp>_0.webp` | `categories.imageUrl` |
+| باركود شام كاش | `payments/sham_cash/<stamp>_0.webp` | `config/payment_addresses.sham_cash_qr` |
 | إيصال دفع | `receipts/<uid>/<orderId>.jpg` | `orders.receiptUrl` |
 
 ## الإعدادات: `config/media`
@@ -60,5 +61,5 @@ rclone sync r2:mhn-images ./mhn-images-backup
 ## الـ Worker
 - الكود موجود بـ `media_worker/worker.js`. بعد أي تعديل عليه: Cloudflare ← Workers ← `mhn-media` ← Edit code ← الصق ← Deploy.
 - المتغيرات: `PROJECT_ID` (Text)، والربط: `BUCKET` → `mhn-images` (EU).
-- مين بيحقلّو يكتب: الأدمن (claim `admin`) على `products/` و`banners/` و`categories/` و`suppliers/`.
+- مين بيحقلّو يكتب: الأدمن (claim `admin`) على `products/` و`banners/` و`categories/` و`suppliers/` و`payments/`.
   والزبون على `receipts/<uid>/` تبعو بس، مرة وحدة، وبحد أقصى 3MB.

@@ -76,7 +76,7 @@ void setupInjector() {
   // ===== Shipping =====
   getIt.registerLazySingleton(() => ShippingRepository(db));
   getIt.registerLazySingleton(() => AppUpdateRepository(db));
-  getIt.registerLazySingleton(() => PaymentSettingsRepository(db));
+  getIt.registerLazySingleton(() => PaymentSettingsRepository(db, getIt<MediaService>()));
 
   // ===== Orders =====
   getIt.registerLazySingleton<OrdersRepository>(
