@@ -15,7 +15,13 @@ class AdminImagePicker extends StatelessWidget {
   final List<MediaImage> images;
   final ValueChanged<List<MediaImage>> onChanged;
 
-  const AdminImagePicker({super.key, required this.images, required this.onChanged});
+  /// One image only (a logo, a cover): picking another replaces it.
+  final bool single;
+
+  const AdminImagePicker({super.key, required this.images, required this.onChanged, this.single = false});
+
+  void _emit(List<MediaImage> next) =>
+      onChanged(single ? [?next.whereType<PickedImage>().lastOrNull ?? next.lastOrNull] : next);
 
   Future<void> _pickImages() async {
     const typeGroup = XTypeGroup(
@@ -25,14 +31,14 @@ class AdminImagePicker extends StatelessWidget {
     final files = await openFiles(acceptedTypeGroups: [typeGroup]);
     if (files.isEmpty) return;
     final bytesList = await Future.wait(files.map((f) => f.readAsBytes()));
-    onChanged([...images, for (final b in bytesList) PickedImage(b)]);
+    _emit([...images, for (final b in bytesList) PickedImage(b)]);
   }
 
-  void _makeMain(int index) => onChanged([images[index], ...images.whereIndexed((i, _) => i != index)]);
+  void _makeMain(int index) => _emit([images[index], ...images.whereIndexed((i, _) => i != index)]);
 
   void _remove(int index) {
     final next = [...images]..removeAt(index);
-    onChanged(next);
+    _emit(next);
   }
 
   @override

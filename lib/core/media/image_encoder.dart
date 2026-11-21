@@ -21,6 +21,8 @@ class ImageSpec {
   static const product = ImageSpec(1600, 0.80, thumbSide: 400);
   static const banner = ImageSpec(1600, 0.80);
   static const logo = ImageSpec(512, 0.85);
+  static const category = ImageSpec(512, 0.85);
+  static const cover = ImageSpec(1200, 0.80);
 }
 
 /// Resizes and re-encodes in the browser (canvas → WebP): fast, no package.

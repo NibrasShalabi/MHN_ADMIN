@@ -278,11 +278,11 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
     }
   }
 
-  /// Read from the category on every save, so a product follows it.
-  Future<String> _sectionOf(String? categoryId) async {
-    if (categoryId == null) return ProductSection.store;
-    final doc = await _db.collection('categories').doc(categoryId).get();
-    return _section(doc.data());
+  /// Read from the category on every save, so a product follows it:
+  /// where it is listed, and whether male accounts see it.
+  Future<Map<String, dynamic>> _fromCategory(String? categoryId) async {
+    final category = categoryId == null ? null : (await _db.collection('categories').doc(categoryId).get()).data();
+    return {'section': _section(category), 'femaleOnly': category?['femaleOnly'] ?? false};
   }
 
   String _section(Map<String, dynamic>? category) => switch (category?['scope']) {
@@ -295,7 +295,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
   /// fields those queries filter on. Written the first time the whole list
   /// loads (opening Analytics or Presets once).
   Future<void> _backfillListFields(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
-    const fields = ['section', 'searchKeys', 'pricing', 'dealOnly', 'createdAt'];
+    const fields = ['section', 'femaleOnly', 'searchKeys', 'pricing', 'dealOnly', 'createdAt'];
     final legacy = docs.where((d) => fields.any((f) => d.data()[f] == null)).toList();
     if (legacy.isEmpty) return;
     AdminCache.clear();
@@ -306,6 +306,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
         final d = doc.data();
         batch.update(doc.reference, {
           'section': _section(categories[d['categoryId']]),
+          'femaleOnly': categories[d['categoryId']]?['femaleOnly'] ?? false,
           'searchKeys': SearchKeys.of('${d['name'] ?? ''}'),
           'pricing': d['pricing'] ?? ProductPricing.money.name,
           'dealOnly': d['dealOnly'] ?? false,
@@ -348,7 +349,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       }).toList() ?? [],
       'discountPercentage': product.discountPercentage,
       'pricing': product.pricing.name,
-      'section': await _sectionOf(product.category),
+      ...await _fromCategory(product.category),
       'searchKeys': SearchKeys.of(product.name),
     };
   }

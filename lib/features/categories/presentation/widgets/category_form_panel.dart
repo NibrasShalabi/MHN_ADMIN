@@ -7,7 +7,9 @@ import '../../../../core/theme/admin_colors.dart';
 import '../../../../core/theme/admin_text_styles.dart';
 import '../../../../core/widgets/admin_button.dart';
 import '../../../../core/widgets/admin_chips.dart';
+import '../../../../core/media/media_image.dart';
 import '../../../../core/widgets/admin_field.dart';
+import '../../../../core/widgets/admin_image_picker.dart';
 import '../../../../core/widgets/admin_text_input.dart';
 import '../../../suppliers/data/repository/suppliers_repository.dart';
 import '../../../suppliers/domain/entities/supplier.dart';
@@ -32,6 +34,8 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
   late final TextEditingController _filterNameController;
   late CategoryScope _scope;
   late List<ProductFilter> _filters;
+  late List<MediaImage> _image;
+  late bool _femaleOnly;
   String? _supplierId;
   late Future<List<Supplier>> _suppliersFuture;
 
@@ -45,6 +49,8 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
     _filterNameController = TextEditingController();
     _scope = widget.supplierId != null ? CategoryScope.supplier : c?.scope ?? CategoryScope.store;
     _filters = [...?c?.filters];
+    _image = [?c?.image];
+    _femaleOnly = c?.femaleOnly ?? false;
     _supplierId = widget.supplierId ?? c?.supplierId;
     _suppliersFuture = GetIt.instance<SuppliersRepository>().getSuppliers();
   }
@@ -79,6 +85,8 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
       scope: _scope,
       filters: _filters,
       supplierId: _scope == CategoryScope.supplier ? _supplierId : null,
+      image: _image.firstOrNull,
+      femaleOnly: _femaleOnly,
     );
     _isEditing ? widget.cubit.updateCategory(category) : widget.cubit.addCategory(category);
     Navigator.of(context).pop();
@@ -93,6 +101,22 @@ class _CategoryFormPanelState extends State<CategoryFormPanel> {
           label: AdminStrings.categoryName,
           isRequired: true,
           child: AdminTextInput(controller: _nameController),
+        ),
+        AdminField(
+          label: AdminStrings.categoryImage,
+          hint: AdminStrings.categoryImageHint,
+          child: AdminImagePicker(
+            images: _image,
+            single: true, onChanged: (imgs) => setState(() => _image = imgs),
+          ),
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _femaleOnly,
+          activeThumbColor: AdminColors.gold,
+          title: Text(AdminStrings.categoryFemaleOnly, style: AdminTextStyles.body),
+          subtitle: Text(AdminStrings.categoryFemaleOnlyHint, style: AdminTextStyles.caption),
+          onChanged: (v) => setState(() => _femaleOnly = v),
         ),
         if (widget.supplierId == null) AdminField(
           label: AdminStrings.categoryScope,

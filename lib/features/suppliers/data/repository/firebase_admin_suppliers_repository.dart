@@ -14,10 +14,17 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
 
   FirebaseAdminSuppliersRepository(this._db, this._media);
 
-  Future<String?> _logoPath(String id) async => (await _suppliers.doc(id).get()).data()?['logoUrl'] as String?;
+  /// The logo and cover paths saved now — read before a change so the
+  /// files it drops can be deleted after.
+  Future<List<String?>> _imagePaths(String id) async {
+    final d = (await _suppliers.doc(id).get()).data();
+    return [d?['logoUrl'] as String?, d?['coverUrl'] as String?];
+  }
 
-  Future<String?> _saveLogo(Supplier s) async =>
-      (await _media.save('suppliers/${s.id}', [?s.logo], ImageSpec.logo)).firstOrNull;
+  Future<Map<String, String?>> _saveImages(Supplier s) async => {
+        'logoUrl': (await _media.save('suppliers/${s.id}', [?s.logo], ImageSpec.logo)).firstOrNull,
+        'coverUrl': (await _media.save('suppliers/${s.id}', [?s.cover], ImageSpec.cover)).firstOrNull,
+      };
 
   CollectionReference<Map<String, dynamic>> get _suppliers => _db.collection('suppliers');
 
@@ -30,11 +37,11 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
   @override
   Future<void> addSupplier(Supplier supplier) async {
     AdminCache.clear();
-    final logo = await _saveLogo(supplier);
+    final images = await _saveImages(supplier);
     await CatalogVersion.commit(
       _db,
       (b) => b.set(
-          _suppliers.doc(supplier.id), {..._toMap(supplier), 'logoUrl': logo, 'createdAt': FieldValue.serverTimestamp()}));
+          _suppliers.doc(supplier.id), {..._toMap(supplier), ...images, 'createdAt': FieldValue.serverTimestamp()}));
   }
 
   /// Merge keeps fields this form doesn't own (ownerUid). logoUrl is a
@@ -42,19 +49,19 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
   @override
   Future<void> updateSupplier(Supplier supplier) async {
     AdminCache.clear();
-    final before = await _logoPath(supplier.id);
-    final logo = await _saveLogo(supplier);
+    final before = await _imagePaths(supplier.id);
+    final images = await _saveImages(supplier);
     await CatalogVersion.commit(
-        _db, (b) => b.set(_suppliers.doc(supplier.id), {..._toMap(supplier), 'logoUrl': logo}, SetOptions(merge: true)));
-    await _media.removeUnused([before], [logo]);
+        _db, (b) => b.set(_suppliers.doc(supplier.id), {..._toMap(supplier), ...images}, SetOptions(merge: true)));
+    await _media.removeUnused(before, images.values);
   }
 
   @override
   Future<void> deleteSupplier(String id) async {
     AdminCache.clear();
-    final before = await _logoPath(id);
+    final before = await _imagePaths(id);
     await CatalogVersion.commit(_db, (b) => b.delete(_suppliers.doc(id)));
-    await _media.removeUnused([before]);
+    await _media.removeUnused(before);
   }
 
   Map<String, dynamic> _toMap(Supplier s) => {
@@ -78,6 +85,7 @@ class FirebaseAdminSuppliersRepository implements SuppliersRepository {
       isActive: d['isActive'] as bool? ?? true,
       ownerUid: d['ownerUid'] as String?,
       logo: switch (d['logoUrl']) { final String p => StoredImage(p), _ => null },
+      cover: switch (d['coverUrl']) { final String p => StoredImage(p), _ => null },
     );
   }
 }

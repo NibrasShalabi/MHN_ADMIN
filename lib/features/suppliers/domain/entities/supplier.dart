@@ -9,6 +9,9 @@ class Supplier extends Equatable {
   final String id;
   final String name;
   final MediaImage? logo;
+
+  /// The wide picture on the supplier's card; the fire gradient without it.
+  final MediaImage? cover;
   final String description;
 
   /// Digits with the country code, e.g. 963912345678.
@@ -22,6 +25,7 @@ class Supplier extends Equatable {
     required this.id,
     required this.name,
     this.logo,
+    this.cover,
     this.description = '',
     this.phone = '',
     this.address = '',
@@ -31,5 +35,5 @@ class Supplier extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, name, logo, description, phone, address, mapsUrl, isActive, ownerUid];
+  List<Object?> get props => [id, name, logo, cover, description, phone, address, mapsUrl, isActive, ownerUid];
 }

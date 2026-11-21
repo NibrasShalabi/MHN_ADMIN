@@ -70,7 +70,7 @@ void setupInjector() {
 
   // ===== Categories =====
   getIt.registerLazySingleton<CategoriesRepository>(
-        () => FirebaseAdminCategoriesRepository(db),
+        () => FirebaseAdminCategoriesRepository(db, getIt<MediaService>()),
   );
 
   // ===== Shipping =====

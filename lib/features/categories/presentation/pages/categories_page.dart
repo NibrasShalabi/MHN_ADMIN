@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../../../core/error/admin_error.dart';
+import '../../../../core/media/media_thumb.dart';
+import '../../../../core/widgets/admin_text_input.dart';
 import '../../../../core/constants/admin_constants.dart';
 import '../../../../core/constants/admin_strings.dart';
 import '../../../../core/theme/admin_colors.dart';
@@ -34,6 +37,14 @@ class _CategoriesView extends StatelessWidget {
   final String? supplierId;
 
   const _CategoriesView({this.supplierId});
+
+  void _openImport(BuildContext context, CategoriesCubit cubit) {
+    showAdminSidePanel(
+      context,
+      title: AdminStrings.importCategories,
+      child: _ImportPanel(cubit: cubit),
+    );
+  }
 
   void _openForm(BuildContext context, CategoriesCubit cubit, {Category? category}) {
     showAdminSidePanel(
@@ -92,6 +103,16 @@ class _CategoriesView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            if (supplierId == null)
+              Builder(
+                builder: (context) => AdminButton(
+                  label: AdminStrings.importCategories,
+                  icon: Icons.playlist_add,
+                  kind: AdminButtonKind.secondary,
+                  onPressed: () => _openImport(context, context.read<CategoriesCubit>()),
+                ),
+              ),
+            const SizedBox(width: AdminConstants.spacingSm),
             Builder(
               builder: (context) => AdminButton(
                 label: AdminStrings.addCategory,
@@ -126,6 +147,7 @@ class _CategoriesView extends StatelessWidget {
               emptyMessage: AdminStrings.noData,
               rowCount: categories.length,
               columns: const [
+                AdminColumn('', flex: 1),
                 AdminColumn(AdminStrings.categoryName, flex: 3),
                 AdminColumn(AdminStrings.categoryScope, flex: 2),
                 AdminColumn(AdminStrings.filters, flex: 2),
@@ -134,7 +156,8 @@ class _CategoriesView extends StatelessWidget {
               cellsBuilder: (index) {
                 final category = categories[index];
                 return [
-                  Text(category.name, style: AdminTextStyles.caption),
+                  MediaThumb(image: category.image, width: 32),
+                  Text(category.femaleOnly ? '${category.name}  ♀' : category.name, style: AdminTextStyles.caption),
                   Text(category.scope.label, style: AdminTextStyles.caption),
                   Text('${category.filters.length}', style: AdminTextStyles.caption),
                   IconButton(
@@ -147,6 +170,55 @@ class _CategoriesView extends StatelessWidget {
             );
           },
         ),
+      ],
+    );
+  }
+}
+
+/// Paste many categories at once — see CategoryImport for the format.
+class _ImportPanel extends StatefulWidget {
+  final CategoriesCubit cubit;
+
+  const _ImportPanel({required this.cubit});
+
+  @override
+  State<_ImportPanel> createState() => _ImportPanelState();
+}
+
+class _ImportPanelState extends State<_ImportPanel> {
+  final _text = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _import() async {
+    setState(() => _busy = true);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final count = await widget.cubit.importCategories(_text.text);
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(AdminStrings.categoriesImported(count))));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(AdminError.message(e))));
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(AdminStrings.importCategoriesHint, style: AdminTextStyles.caption),
+        const SizedBox(height: AdminConstants.spacingMd),
+        AdminTextInput(controller: _text, maxLines: 18, hint: 'أطفال : أثاث، أحذية، ألبسة\n* نسائي : أحذية، فساتين سهرة'),
+        const SizedBox(height: AdminConstants.spacingLg),
+        AdminButton(label: AdminStrings.importCategories, onPressed: _busy ? null : _import),
       ],
     );
   }

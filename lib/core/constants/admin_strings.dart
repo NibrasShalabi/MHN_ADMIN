@@ -97,6 +97,16 @@ class AdminStrings {
   // ==================== الأقسام ====================
   static const String categories = 'الأقسام';
   static const String addCategory = 'إضافة قسم';
+  static const String supplierCover = 'صورة الغلاف';
+  static const String supplierCoverHint = 'الصورة العريضة على بطاقة المورد — بلاها بتطلع خلفية النار';
+  static const String categoryImage = 'صورة القسم';
+  static const String categoryImageHint = 'صورة أو أيقونة — بلاها بيطلع أول حرف من الاسم';
+  static const String categoryFemaleOnly = 'للإناث فقط';
+  static const String categoryFemaleOnlyHint = 'ما بيطلع القسم ولا منتجاته لحسابات الذكور';
+  static const String importCategories = 'استيراد أقسام';
+  static const String importCategoriesHint =
+      'كل قسم بسطر: اسم القسم، بعدين نقطتين (:)، بعدين الفلاتر مفصولة بفواصل (،). حط * بأول السطر للأقسام يلي للإناث فقط.';
+  static String categoriesImported(int n) => 'انضاف $n قسم';
   static const String editCategory = 'تعديل قسم';
   static const String addBanner = 'إضافة بانر';
   static const String editBanner = 'تعديل بانر';

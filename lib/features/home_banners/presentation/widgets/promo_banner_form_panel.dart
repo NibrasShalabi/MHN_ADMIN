@@ -103,7 +103,7 @@ class _PromoBannerFormPanelState extends State<PromoBannerFormPanel> {
       children: [
         AdminField(
           label: AdminStrings.bannerImage,
-          child: AdminImagePicker(images: _image, onChanged: (imgs) => setState(() => _image = [?imgs.whereType<PickedImage>().lastOrNull ?? imgs.lastOrNull])),
+          child: AdminImagePicker(images: _image, single: true, onChanged: (imgs) => setState(() => _image = imgs)),
         ),
         AdminField(label: AdminStrings.bannerTitle, child: AdminTextInput(controller: _title)),
         AdminField(

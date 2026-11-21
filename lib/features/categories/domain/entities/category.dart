@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/constants/admin_strings.dart';
+import '../../../../core/media/media_image.dart';
 
 enum CategoryScope { store, fitness, loyalty, supplier }
 
@@ -33,12 +34,23 @@ class Category extends Equatable {
   /// this category belongs to, mirroring the client app.
   final String? supplierId;
 
+  /// Picture or icon shown on the category tile; the app falls back to the
+  /// name's first letter.
+  final MediaImage? image;
+
+  /// Hidden from male accounts in the app — the category, its products in
+  /// every list, and search. Copied onto each product (see the products
+  /// repository) so lists can filter without reading categories.
+  final bool femaleOnly;
+
   const Category({
     required this.id,
     required this.name,
     required this.scope,
     this.filters = const [],
     this.supplierId,
+    this.image,
+    this.femaleOnly = false,
   });
 
   Category copyWith({
@@ -46,6 +58,7 @@ class Category extends Equatable {
     CategoryScope? scope,
     List<ProductFilter>? filters,
     String? supplierId,
+    bool? femaleOnly,
   }) {
     return Category(
       id: id,
@@ -53,9 +66,11 @@ class Category extends Equatable {
       scope: scope ?? this.scope,
       filters: filters ?? this.filters,
       supplierId: supplierId ?? this.supplierId,
+      image: image,
+      femaleOnly: femaleOnly ?? this.femaleOnly,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, scope, filters, supplierId];
+  List<Object?> get props => [id, name, scope, filters, supplierId, image, femaleOnly];
 }

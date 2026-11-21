@@ -1,6 +1,7 @@
 import '../../../../core/bloc/safe_cubit.dart';
 
 import '../../data/repository/categories_repository.dart';
+import '../../domain/category_import.dart';
 import '../../domain/entities/category.dart';
 import 'categories_state.dart';
 import '../../../../core/error/admin_error.dart';
@@ -23,6 +24,15 @@ class CategoriesCubit extends SafeCubit<CategoriesState> {
   Future<void> addCategory(Category category) async {
     await _repository.addCategory(category);
     await loadCategories();
+  }
+
+  /// Returns how many categories were created.
+  Future<int> importCategories(String text) async {
+    final categories = CategoryImport.parse(text);
+    if (categories.isEmpty) return 0;
+    await _repository.addCategories(categories);
+    await loadCategories();
+    return categories.length;
   }
 
   Future<void> updateCategory(Category category) async {

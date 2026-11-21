@@ -25,7 +25,8 @@
 |---|---|---|
 | منتج | `products/<id>/<stamp>_<i>.webp` + `_thumb` | `products.imageUrls` (أول وحدة هي الرئيسية) |
 | بانر | `banners/<id>/<stamp>_0.webp` | `banners.imageUrl` |
-| لوغو مورد | `suppliers/<id>/<stamp>_0.webp` | `suppliers.logoUrl` |
+| لوغو مورد وغلافو | `suppliers/<id>/<stamp>_0.webp` | `suppliers.logoUrl`، `suppliers.coverUrl` |
+| صورة قسم | `categories/<id>/<stamp>_0.webp` | `categories.imageUrl` |
 | إيصال دفع | `receipts/<uid>/<orderId>.jpg` | `orders.receiptUrl` |
 
 ## الإعدادات: `config/media`

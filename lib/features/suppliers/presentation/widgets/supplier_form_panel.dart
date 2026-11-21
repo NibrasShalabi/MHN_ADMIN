@@ -37,6 +37,7 @@ class _SupplierFormPanelState extends State<SupplierFormPanel> {
   late final _maps = TextEditingController(text: widget.supplier?.mapsUrl ?? '');
   late bool _active = widget.supplier?.isActive ?? true;
   late List<MediaImage> _logo = [?widget.supplier?.logo];
+  late List<MediaImage> _cover = [?widget.supplier?.cover];
   bool _saving = false;
 
   @override
@@ -58,6 +59,7 @@ class _SupplierFormPanelState extends State<SupplierFormPanel> {
       id: widget.supplier?.id ?? 'SUP-${DateTime.now().millisecondsSinceEpoch}',
       name: _name.text.trim(),
       logo: _logo.firstOrNull,
+      cover: _cover.firstOrNull,
       description: _description.text.trim(),
       phone: _phoneDigits,
       address: _address.text.trim(),
@@ -120,7 +122,12 @@ class _SupplierFormPanelState extends State<SupplierFormPanel> {
         AdminField(
           label: AdminStrings.supplierLogo,
           // One logo — picking a new one replaces the old.
-          child: AdminImagePicker(images: _logo, onChanged: (imgs) => setState(() => _logo = [?imgs.whereType<PickedImage>().lastOrNull ?? imgs.lastOrNull])),
+          child: AdminImagePicker(images: _logo, single: true, onChanged: (imgs) => setState(() => _logo = imgs)),
+        ),
+        AdminField(
+          label: AdminStrings.supplierCover,
+          hint: AdminStrings.supplierCoverHint,
+          child: AdminImagePicker(images: _cover, single: true, onChanged: (imgs) => setState(() => _cover = imgs)),
         ),
         Row(
           children: [
