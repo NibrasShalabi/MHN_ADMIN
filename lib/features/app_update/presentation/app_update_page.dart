@@ -66,7 +66,10 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
         storeUrl: _storeUrl.text.trim(),
       ));
       messenger.showSnackBar(const SnackBar(content: Text(AdminStrings.saved)));
-      setState(() => _history = _repository.history());
+      final history = _repository.history();
+      setState(() {
+        _history = history;
+      });
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(AdminError.message(e))));
     } finally {
