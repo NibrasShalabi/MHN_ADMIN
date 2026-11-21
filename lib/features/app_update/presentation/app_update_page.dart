@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/constants/admin_constants.dart';
 import '../../../core/constants/admin_strings.dart';
 import '../../../core/error/admin_error.dart';
+import '../../../core/theme/admin_colors.dart';
 import '../../../core/theme/admin_text_styles.dart';
 import '../../../core/widgets/admin_button.dart';
 import '../../../core/widgets/admin_card.dart';
@@ -35,6 +37,7 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
     _storeUrl.text = c.storeUrl;
   });
   bool _saving = false;
+  late Future<List<AppRelease>> _history = _repository.history();
 
   @override
   void dispose() {
@@ -63,6 +66,7 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
         storeUrl: _storeUrl.text.trim(),
       ));
       messenger.showSnackBar(const SnackBar(content: Text(AdminStrings.saved)));
+      setState(() => _history = _repository.history());
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(AdminError.message(e))));
     } finally {
@@ -114,9 +118,59 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
             ),
             const SizedBox(height: AdminConstants.spacingLg),
             AdminButton(label: AdminStrings.save, onPressed: _saving ? null : _save),
+            const SizedBox(height: AdminConstants.spacingXl),
+            AdminCard(
+              title: AdminStrings.updateHistory,
+              child: FutureBuilder<List<AppRelease>>(
+                future: _history,
+                builder: (context, snap) {
+                  final releases = snap.data ?? const <AppRelease>[];
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (releases.isEmpty) return Text(AdminStrings.noData, style: AdminTextStyles.caption);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [for (final r in releases) _ReleaseRow(release: r)],
+                  );
+                },
+              ),
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+/// One logged save: when, which builds, and what the customers were told.
+class _ReleaseRow extends StatelessWidget {
+  final AppRelease release;
+
+  const _ReleaseRow({required this.release});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = release.config;
+    final at = release.savedAt;
+    final when = at == null ? '' : DateFormat('yyyy/MM/dd – HH:mm').format(at);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AdminConstants.spacingSm),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AdminColors.border))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${c.latestName.isEmpty ? '—' : c.latestName}  ·  ${AdminStrings.updateBuilds(c.latestBuild, c.minBuild)}',
+            style: AdminTextStyles.body,
+          ),
+          Text(when, style: AdminTextStyles.caption),
+          if (c.notes.isNotEmpty) ...[
+            const SizedBox(height: AdminConstants.spacingXs),
+            Text(c.notes, style: AdminTextStyles.caption.copyWith(color: AdminColors.textSecondary)),
+          ],
+        ],
+      ),
     );
   }
 }

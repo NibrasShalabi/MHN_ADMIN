@@ -51,5 +51,29 @@ class AppUpdateRepository {
 
   Future<AppUpdateConfig> get() async => AppUpdateConfig.fromMap((await _doc.get()).data() ?? const {});
 
-  Future<void> save(AppUpdateConfig config) => _doc.set(config.toMap());
+  CollectionReference<Map<String, dynamic>> get _log => _db.collection('appReleases');
+
+  /// Writes config/app and logs the same values with the time, in one
+  /// commit — the log is how you see what each release said and changed.
+  Future<void> save(AppUpdateConfig config) => (_db.batch()
+        ..set(_doc, config.toMap())
+        ..set(_log.doc(), {...config.toMap(), 'savedAt': FieldValue.serverTimestamp()}))
+      .commit();
+
+  /// The latest entries first.
+  Future<List<AppRelease>> history({int limit = 30}) async {
+    final snap = await _log.orderBy('savedAt', descending: true).limit(limit).get();
+    return [
+      for (final d in snap.docs)
+        AppRelease(AppUpdateConfig.fromMap(d.data()), (d.data()['savedAt'] as Timestamp?)?.toDate()),
+    ];
+  }
+}
+
+/// One save of the update settings.
+class AppRelease {
+  final AppUpdateConfig config;
+  final DateTime? savedAt;
+
+  const AppRelease(this.config, this.savedAt);
 }

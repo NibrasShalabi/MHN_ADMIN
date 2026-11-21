@@ -286,6 +286,8 @@ class AdminStrings {
   // ===== Shipping =====
   static const String navShipping = 'الشحن';
   static const String navAppUpdate = 'تحديث التطبيق';
+  static const String updateHistory = 'سجل التحديثات';
+  static String updateBuilds(int latest, int min) => 'آخر نسخة $latest · أقل نسخة $min';
   static const String updateHowItWorks =
       'كل ما يفتح الزبون التطبيق بيقارن رقم نسخته (الرقم بعد + بـ pubspec) بهالأرقام. أقدم من آخر نسخة: بتطلعلو رسالة تحديث بيقدر يأجّلها. أقدم من أقل نسخة: ما بيقدر يستعمل التطبيق قبل ما يحدّث.';
   static const String updateLatestBuild = 'رقم آخر نسخة (build)';
