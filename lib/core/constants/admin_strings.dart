@@ -64,6 +64,7 @@ class AdminStrings {
   static const String productPricePoints = 'السعر (بالنقاط)';
   static const String productCostPrice = 'سعر التكلفة (لا يظهر للعميل)';
   static const String productShippingPrice = 'سعر الشحن (اختياري)';
+  static const String productStockHint = 'فاضي = بدون حد (ما بينحسب مخزون)';
   static const String productStock = 'المخزون';
   static const String productDescription = 'الوصف';
   static const String productIngredients = 'المكوّنات';

@@ -182,7 +182,8 @@ class _ProductsViewState extends State<_ProductsView> {
                         ),
                       ],
                     ],
-                  ),                  Text('${product.stock}', style: AdminTextStyles.caption),
+                  ),
+                  Text(product.stock?.toString() ?? '∞', style: AdminTextStyles.caption),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

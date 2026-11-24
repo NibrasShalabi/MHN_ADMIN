@@ -128,12 +128,23 @@ class FirebaseAdminOrdersRepository implements OrdersRepository {
       final stockOut = order['stockRestored'] != true;
       final restoringStock = status == OrderStatus.cancelled && stockOut;
       final retakingStock = status != OrderStatus.cancelled && !stockOut;
+      // Products without a stock field aren't counted — leave them so
+      // (an increment would create the field and start limiting them).
+      final counted = <String>{};
+      if (restoringStock || retakingStock) {
+        for (final item in (order['items'] as List? ?? const []).cast<Map<String, dynamic>>()) {
+          final productId = item['productId'] as String?;
+          if (productId == null || productId.isEmpty) continue;
+          final product = await tx.get(_db.collection('products').doc(productId));
+          if (product.data()?['stock'] != null) counted.add(productId);
+        }
+      }
 
       // ===== Writes =====
       if (restoringStock || retakingStock) {
         for (final item in (order['items'] as List? ?? const []).cast<Map<String, dynamic>>()) {
           final productId = item['productId'] as String?;
-          if (productId == null || productId.isEmpty) continue;
+          if (productId == null || !counted.contains(productId)) continue;
           final qty = (item['quantity'] as num? ?? 0).toInt();
           tx.update(_db.collection('products').doc(productId), {
             'stock': FieldValue.increment(restoringStock ? qty : -qty),

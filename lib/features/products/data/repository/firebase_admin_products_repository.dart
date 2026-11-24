@@ -221,7 +221,7 @@ class FirebaseAdminProductsRepository implements ProductsRepository {
       price: (d['price'] as num? ?? 0).toDouble(),
       shippingPrice: (d['shippingPrice'] as num?)?.toDouble(),
       supplierId: d['supplierId'] as String?,
-      stock: d['stock'] as int? ?? 0,
+      stock: (d['stock'] as num?)?.toInt(),
       description: d['description'] as String? ?? '',
       ingredients: d['ingredients'] as String?,
       benefits: d['benefits'] as String?,

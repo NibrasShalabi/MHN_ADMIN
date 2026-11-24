@@ -107,7 +107,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       text: p?.shippingPrice == null ? '' : _plain(p!.shippingPrice!),
     );
     _stockController = TextEditingController(
-      text: p == null ? '' : p.stock.toString(),
+      text: p?.stock?.toString() ?? '',
     );
     _descriptionController = TextEditingController(text: p?.description ?? '');
     _ingredientsController = TextEditingController(text: p?.ingredients ?? '');
@@ -227,7 +227,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
     final costPrice = double.tryParse(_costPriceController.text.trim());
     final shippingPrice = double.tryParse(_shippingPriceController.text.trim());
-    final stock = int.tryParse(_stockController.text.trim()) ?? 0;
+    // Empty = not counted (no limit); a number = tracked stock.
+    final stock = int.tryParse(_stockController.text.trim());
     final discountPercentage = _hasCatalogFields ? double.tryParse(_discountController.text.trim()) : null;
     final pricing = await _pricingForCategory();
     if (!mounted) return;
@@ -484,7 +485,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           Expanded(
                             child: AdminField(
                               label: AdminStrings.productStock,
-                              isRequired: true,
+                              hint: AdminStrings.productStockHint,
                               child: AdminTextInput(
                                 controller: _stockController,
                                 keyboardType: TextInputType.number,

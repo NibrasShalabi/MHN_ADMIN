@@ -28,7 +28,8 @@ class Product extends Equatable {
   /// signal Analytics uses to attribute sales to a supplier.
   final String? supplierId;
 
-  final int stock;
+  /// Pieces left; null = not counted — the app sells it without a limit.
+  final int? stock;
   final String description;
   final String? ingredients;
   final String? benefits;
@@ -56,7 +57,7 @@ class Product extends Equatable {
     required this.price,
     this.shippingPrice,
     this.supplierId,
-    required this.stock,
+    this.stock,
     this.description = '',
     this.ingredients,
     this.benefits,
